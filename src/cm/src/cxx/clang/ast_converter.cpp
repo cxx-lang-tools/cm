@@ -26,14 +26,12 @@
 namespace cm::src::cxx::clang {
 
 
-void ast_converter::convert(::clang::ASTContext & ctx) {
-    clang_ast_ctx_ = &ctx;
-
+void ast_converter::convert() {
     // auto tu_decl = ctx.getTranslationUnitDecl();
     // tu_decl->dump();
 
     // setting source code model as current context
-    auto & src_mngr = ctx.getSourceManager();
+    auto & src_mngr = clang_ast_ctx_->getSourceManager();
     source_file * src = nullptr;
     if (auto main_entry = src_mngr.getFileEntryRefForID(src_mngr.getMainFileID())) {
         src = scm_.get_or_create_source(main_entry->getName().str());
@@ -45,16 +43,16 @@ void ast_converter::convert(::clang::ASTContext & ctx) {
     ctx_ = src->decl_ctx();
 
     // setting translation unit as current clang context
-    clang_ctx_ = ctx.getTranslationUnitDecl();
+    clang_ctx_ = clang_ast_ctx_->getTranslationUnitDecl();
 
     // converting AST to code model
-    cm_conv_.convert(ctx);
+    cm_conv_.convert();
 
     // setting source code model as current declaration context
     //ctx_ = &scm_.f;
 
     // processing source code
-    this->TraverseAST(ctx);
+    this->TraverseAST(*clang_ast_ctx_);
 
     // // traversing over all top level declarations in translation unit
     // auto tu_decl = ctx_.getTranslationUnitDecl();

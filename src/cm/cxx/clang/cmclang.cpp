@@ -61,8 +61,8 @@ void parse_source_file(code_model & mdl,
         // TODO: try avoid this hack
         auto & ctx = reinterpret_cast<CXTranslationUnitImpl*>(tu)->TheASTUnit->getASTContext();
 
-        ast_converter ast_conv{mdl};
-        ast_conv.convert(ctx);
+        ast_converter ast_conv{mdl, ctx};
+        ast_conv.convert();
     }
 
     // removing translation unit

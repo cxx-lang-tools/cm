@@ -72,13 +72,11 @@ static std::string dump_decl_to_string(const ::clang::Decl * decl) {
 }
 
 
-void ast_converter::convert(const ::clang::ASTContext & ctx) {
-    clang_ast_ctx_ = &ctx;
-
+void ast_converter::convert() {
     // traversing over all top level declarations in translation unit
-    auto tu_decl = ctx.getTranslationUnitDecl();
+    auto tu_decl = ctx_.clang_ctx().getTranslationUnitDecl();
 
-    context_setter csetter{*this, &mdl_, tu_decl};
+    conv_context::decl_context_setter csetter{ctx_, &ctx_.mdl(), tu_decl};
 
     CM_CLANG_LOG_TRACE << "converting translation unit:\n" << dump_decl_to_string(tu_decl);
 
@@ -92,8 +90,6 @@ void ast_converter::convert(const ::clang::ASTContext & ctx) {
             convert_decl(decl);
         }
     }
-
-    clang_ast_ctx_ = nullptr;
 }
 
 
@@ -152,112 +148,112 @@ qual_type ast_converter::convert_type(const ::clang::QualType & clang_qual_type)
 type_t * ast_converter::convert_builtin_type(const ::clang::BuiltinType * clang_bt_type) {
     switch (clang_bt_type->getKind()) {
     case ::clang::BuiltinType::Void:
-        return mdl_.bt_void();
+        return ctx_.mdl().bt_void();
 
     case ::clang::BuiltinType::Bool:
-        return mdl_.bt_bool();
+        return ctx_.mdl().bt_bool();
 
     // integer types
     case ::clang::BuiltinType::Char_U:
-        return mdl_.bt_char();
+        return ctx_.mdl().bt_char();
     case ::clang::BuiltinType::UChar:
-        return mdl_.bt_unsigned_char();
+        return ctx_.mdl().bt_unsigned_char();
     case ::clang::BuiltinType::WChar_U:
-        return mdl_.bt_wchar_t();
+        return ctx_.mdl().bt_wchar_t();
     case ::clang::BuiltinType::Char8:
-        return mdl_.bt_char8_t();
+        return ctx_.mdl().bt_char8_t();
     case ::clang::BuiltinType::Char16:
-        return mdl_.bt_char16_t();
+        return ctx_.mdl().bt_char16_t();
     case ::clang::BuiltinType::Char32:
-        return mdl_.bt_char32_t();
+        return ctx_.mdl().bt_char32_t();
     case ::clang::BuiltinType::UShort:
-        return mdl_.bt_unsigned_short();
+        return ctx_.mdl().bt_unsigned_short();
     case ::clang::BuiltinType::UInt:
-        return mdl_.bt_unsigned_int();
+        return ctx_.mdl().bt_unsigned_int();
     case ::clang::BuiltinType::ULong:
-        return mdl_.bt_unsigned_long();
+        return ctx_.mdl().bt_unsigned_long();
     case ::clang::BuiltinType::ULongLong:
-        return mdl_.bt_unsigned_long_long();
+        return ctx_.mdl().bt_unsigned_long_long();
     case ::clang::BuiltinType::UInt128:
-        return mdl_.bt_uint128();
+        return ctx_.mdl().bt_uint128();
     case ::clang::BuiltinType::Char_S:
-        return mdl_.bt_char();
+        return ctx_.mdl().bt_char();
     case ::clang::BuiltinType::SChar:
-        return mdl_.bt_signed_char();
+        return ctx_.mdl().bt_signed_char();
     case ::clang::BuiltinType::WChar_S:
-        return mdl_.bt_wchar_t();
+        return ctx_.mdl().bt_wchar_t();
     case ::clang::BuiltinType::Short:
-        return mdl_.bt_short();
+        return ctx_.mdl().bt_short();
     case ::clang::BuiltinType::Int:
-        return mdl_.bt_int();
+        return ctx_.mdl().bt_int();
     case ::clang::BuiltinType::Long:
-        return mdl_.bt_long();
+        return ctx_.mdl().bt_long();
     case ::clang::BuiltinType::LongLong:
-        return mdl_.bt_long_long();
+        return ctx_.mdl().bt_long_long();
     case ::clang::BuiltinType::Int128:
-        return mdl_.bt_int128();
+        return ctx_.mdl().bt_int128();
 
     // GNU C extension fixed point types. Just treat them as integer types for now
     // TODO: support fixed point types
     case ::clang::BuiltinType::ShortAccum:
-        return mdl_.bt_short();
+        return ctx_.mdl().bt_short();
     case ::clang::BuiltinType::Accum:
-        return mdl_.bt_int();
+        return ctx_.mdl().bt_int();
     case ::clang::BuiltinType::LongAccum:
-        return mdl_.bt_long();
+        return ctx_.mdl().bt_long();
     case ::clang::BuiltinType::UShortAccum:
-        return mdl_.bt_unsigned_short();
+        return ctx_.mdl().bt_unsigned_short();
     case ::clang::BuiltinType::UAccum:
-        return mdl_.bt_unsigned_int();
+        return ctx_.mdl().bt_unsigned_int();
     case ::clang::BuiltinType::ULongAccum:
-        return mdl_.bt_unsigned_long();
+        return ctx_.mdl().bt_unsigned_long();
     case ::clang::BuiltinType::ShortFract:
-        return mdl_.bt_short();
+        return ctx_.mdl().bt_short();
     case ::clang::BuiltinType::Fract:
-        return mdl_.bt_int();
+        return ctx_.mdl().bt_int();
     case ::clang::BuiltinType::LongFract:
-        return mdl_.bt_long();
+        return ctx_.mdl().bt_long();
     case ::clang::BuiltinType::UShortFract:
-        return mdl_.bt_unsigned_short();
+        return ctx_.mdl().bt_unsigned_short();
     case ::clang::BuiltinType::UFract:
-        return mdl_.bt_unsigned_int();
+        return ctx_.mdl().bt_unsigned_int();
     case ::clang::BuiltinType::ULongFract:
-        return mdl_.bt_unsigned_long();
+        return ctx_.mdl().bt_unsigned_long();
     case ::clang::BuiltinType::SatShortAccum:
-        return mdl_.bt_short();
+        return ctx_.mdl().bt_short();
     case ::clang::BuiltinType::SatAccum:
-        return mdl_.bt_int();
+        return ctx_.mdl().bt_int();
     case ::clang::BuiltinType::SatLongAccum:
-        return mdl_.bt_long();
+        return ctx_.mdl().bt_long();
     case ::clang::BuiltinType::SatUShortAccum:
-        return mdl_.bt_unsigned_short();
+        return ctx_.mdl().bt_unsigned_short();
     case ::clang::BuiltinType::SatUAccum:
-        return mdl_.bt_unsigned_int();
+        return ctx_.mdl().bt_unsigned_int();
     case ::clang::BuiltinType::SatULongAccum:
-        return mdl_.bt_unsigned_long();
+        return ctx_.mdl().bt_unsigned_long();
     case ::clang::BuiltinType::SatShortFract:
-        return mdl_.bt_short();
+        return ctx_.mdl().bt_short();
     case ::clang::BuiltinType::SatFract:
-        return mdl_.bt_int();
+        return ctx_.mdl().bt_int();
     case ::clang::BuiltinType::SatLongFract:
-        return mdl_.bt_long();
+        return ctx_.mdl().bt_long();
     case ::clang::BuiltinType::SatUShortFract:
-        return mdl_.bt_unsigned_short();
+        return ctx_.mdl().bt_unsigned_short();
     case ::clang::BuiltinType::SatUFract:
-        return mdl_.bt_unsigned_int();
+        return ctx_.mdl().bt_unsigned_int();
     case ::clang::BuiltinType::SatULongFract:
-        return mdl_.bt_unsigned_long();
+        return ctx_.mdl().bt_unsigned_long();
 
     // float types
     case ::clang::BuiltinType::Half:
         // TODO: support OpenCL half float
-        return mdl_.bt_float();
+        return ctx_.mdl().bt_float();
     case ::clang::BuiltinType::Float:
-        return mdl_.bt_float();
+        return ctx_.mdl().bt_float();
     case ::clang::BuiltinType::Double:
-        return mdl_.bt_double();
+        return ctx_.mdl().bt_double();
     case ::clang::BuiltinType::LongDouble:
-        return mdl_.bt_long_double();
+        return ctx_.mdl().bt_long_double();
     case ::clang::BuiltinType::Float16:
         // TODO: support float16
         assert(false && "don't know how to convert float16 type");
@@ -281,7 +277,7 @@ type_t * ast_converter::convert_builtin_type(const ::clang::BuiltinType * clang_
     case ::clang::BuiltinType::OCLQueue:
     case ::clang::BuiltinType::OCLReserveID:
         // TODO: support objective-c types
-        return mdl_.get_or_create_ptr_type(mdl_.bt_void());
+        return ctx_.mdl().get_or_create_ptr_type(ctx_.mdl().bt_void());
 
     case ::clang::BuiltinType::Dependent:
         // TODO: check if we need it
@@ -315,129 +311,129 @@ type_t * ast_converter::convert_builtin_type(const ::clang::BuiltinType * clang_
 
     case ::clang::BuiltinType::ARCUnbridgedCast:
         // TODO: add support of objective-c
-        return mdl_.bt_int();
+        return ctx_.mdl().bt_int();
 
     case ::clang::BuiltinType::OMPArraySection:
         // TODO: add support of openmp
-        return mdl_.bt_int();
+        return ctx_.mdl().bt_int();
 
     case ::clang::BuiltinType::SveInt8:
-        return mdl_.bt_arm_sve_int8x1();
+        return ctx_.mdl().bt_arm_sve_int8x1();
     case ::clang::BuiltinType::SveInt8x2:
-        return mdl_.bt_arm_sve_int8x2();
+        return ctx_.mdl().bt_arm_sve_int8x2();
     case ::clang::BuiltinType::SveInt8x3:
-        return mdl_.bt_arm_sve_int8x3();
+        return ctx_.mdl().bt_arm_sve_int8x3();
     case ::clang::BuiltinType::SveInt8x4:
-        return mdl_.bt_arm_sve_int8x4();
+        return ctx_.mdl().bt_arm_sve_int8x4();
     case ::clang::BuiltinType::SveInt16:
-        return mdl_.bt_arm_sve_int16x1();
+        return ctx_.mdl().bt_arm_sve_int16x1();
     case ::clang::BuiltinType::SveInt16x2:
-        return mdl_.bt_arm_sve_int16x2();
+        return ctx_.mdl().bt_arm_sve_int16x2();
     case ::clang::BuiltinType::SveInt16x3:
-        return mdl_.bt_arm_sve_int16x3();
+        return ctx_.mdl().bt_arm_sve_int16x3();
     case ::clang::BuiltinType::SveInt16x4:
-        return mdl_.bt_arm_sve_int16x4();
+        return ctx_.mdl().bt_arm_sve_int16x4();
     case ::clang::BuiltinType::SveInt32:
-        return mdl_.bt_arm_sve_int32x1();
+        return ctx_.mdl().bt_arm_sve_int32x1();
     case ::clang::BuiltinType::SveInt32x2:
-        return mdl_.bt_arm_sve_int32x2();
+        return ctx_.mdl().bt_arm_sve_int32x2();
     case ::clang::BuiltinType::SveInt32x3:
-        return mdl_.bt_arm_sve_int32x3();
+        return ctx_.mdl().bt_arm_sve_int32x3();
     case ::clang::BuiltinType::SveInt32x4:
-        return mdl_.bt_arm_sve_int32x4();
+        return ctx_.mdl().bt_arm_sve_int32x4();
     case ::clang::BuiltinType::SveInt64:
-        return mdl_.bt_arm_sve_int64x1();
+        return ctx_.mdl().bt_arm_sve_int64x1();
     case ::clang::BuiltinType::SveInt64x2:
-        return mdl_.bt_arm_sve_int64x2();
+        return ctx_.mdl().bt_arm_sve_int64x2();
     case ::clang::BuiltinType::SveInt64x3:
-        return mdl_.bt_arm_sve_int64x3();
+        return ctx_.mdl().bt_arm_sve_int64x3();
     case ::clang::BuiltinType::SveInt64x4:
-        return mdl_.bt_arm_sve_int64x4();
+        return ctx_.mdl().bt_arm_sve_int64x4();
 
     case ::clang::BuiltinType::SveUint8:
-        return mdl_.bt_arm_sve_uint8x1();
+        return ctx_.mdl().bt_arm_sve_uint8x1();
     case ::clang::BuiltinType::SveUint8x2:
-        return mdl_.bt_arm_sve_uint8x2();
+        return ctx_.mdl().bt_arm_sve_uint8x2();
     case ::clang::BuiltinType::SveUint8x3:
-        return mdl_.bt_arm_sve_uint8x3();
+        return ctx_.mdl().bt_arm_sve_uint8x3();
     case ::clang::BuiltinType::SveUint8x4:
-        return mdl_.bt_arm_sve_uint8x4();
+        return ctx_.mdl().bt_arm_sve_uint8x4();
     case ::clang::BuiltinType::SveUint16:
-        return mdl_.bt_arm_sve_uint16x1();
+        return ctx_.mdl().bt_arm_sve_uint16x1();
     case ::clang::BuiltinType::SveUint16x2:
-        return mdl_.bt_arm_sve_uint16x2();
+        return ctx_.mdl().bt_arm_sve_uint16x2();
     case ::clang::BuiltinType::SveUint16x3:
-        return mdl_.bt_arm_sve_uint16x3();
+        return ctx_.mdl().bt_arm_sve_uint16x3();
     case ::clang::BuiltinType::SveUint16x4:
-        return mdl_.bt_arm_sve_uint16x4();
+        return ctx_.mdl().bt_arm_sve_uint16x4();
     case ::clang::BuiltinType::SveUint32:
-        return mdl_.bt_arm_sve_uint32x1();
+        return ctx_.mdl().bt_arm_sve_uint32x1();
     case ::clang::BuiltinType::SveUint32x2:
-        return mdl_.bt_arm_sve_uint32x2();
+        return ctx_.mdl().bt_arm_sve_uint32x2();
     case ::clang::BuiltinType::SveUint32x3:
-        return mdl_.bt_arm_sve_uint32x3();
+        return ctx_.mdl().bt_arm_sve_uint32x3();
     case ::clang::BuiltinType::SveUint32x4:
-        return mdl_.bt_arm_sve_uint32x4();
+        return ctx_.mdl().bt_arm_sve_uint32x4();
     case ::clang::BuiltinType::SveUint64:
-        return mdl_.bt_arm_sve_uint64x1();
+        return ctx_.mdl().bt_arm_sve_uint64x1();
     case ::clang::BuiltinType::SveUint64x2:
-        return mdl_.bt_arm_sve_uint64x2();
+        return ctx_.mdl().bt_arm_sve_uint64x2();
     case ::clang::BuiltinType::SveUint64x3:
-        return mdl_.bt_arm_sve_uint64x3();
+        return ctx_.mdl().bt_arm_sve_uint64x3();
     case ::clang::BuiltinType::SveUint64x4:
-        return mdl_.bt_arm_sve_uint64x4();
+        return ctx_.mdl().bt_arm_sve_uint64x4();
 
     case ::clang::BuiltinType::SveFloat16:
-        return mdl_.bt_arm_sve_float16x1();
+        return ctx_.mdl().bt_arm_sve_float16x1();
     case ::clang::BuiltinType::SveFloat16x2:
-        return mdl_.bt_arm_sve_float16x2();
+        return ctx_.mdl().bt_arm_sve_float16x2();
     case ::clang::BuiltinType::SveFloat16x3:
-        return mdl_.bt_arm_sve_float16x3();
+        return ctx_.mdl().bt_arm_sve_float16x3();
     case ::clang::BuiltinType::SveFloat16x4:
-        return mdl_.bt_arm_sve_float16x4();
+        return ctx_.mdl().bt_arm_sve_float16x4();
     case ::clang::BuiltinType::SveFloat32:
-        return mdl_.bt_arm_sve_float32x1();
+        return ctx_.mdl().bt_arm_sve_float32x1();
     case ::clang::BuiltinType::SveFloat32x2:
-        return mdl_.bt_arm_sve_float32x2();
+        return ctx_.mdl().bt_arm_sve_float32x2();
     case ::clang::BuiltinType::SveFloat32x3:
-        return mdl_.bt_arm_sve_float32x3();
+        return ctx_.mdl().bt_arm_sve_float32x3();
     case ::clang::BuiltinType::SveFloat32x4:
-        return mdl_.bt_arm_sve_float32x4();
+        return ctx_.mdl().bt_arm_sve_float32x4();
     case ::clang::BuiltinType::SveFloat64:
-        return mdl_.bt_arm_sve_float64x1();
+        return ctx_.mdl().bt_arm_sve_float64x1();
     case ::clang::BuiltinType::SveFloat64x2:
-        return mdl_.bt_arm_sve_float64x2();
+        return ctx_.mdl().bt_arm_sve_float64x2();
     case ::clang::BuiltinType::SveFloat64x3:
-        return mdl_.bt_arm_sve_float64x3();
+        return ctx_.mdl().bt_arm_sve_float64x3();
     case ::clang::BuiltinType::SveFloat64x4:
-        return mdl_.bt_arm_sve_float64x4();
+        return ctx_.mdl().bt_arm_sve_float64x4();
 
     case ::clang::BuiltinType::SveBFloat16:
-        return mdl_.bt_arm_sve_bfloat16x1();
+        return ctx_.mdl().bt_arm_sve_bfloat16x1();
     case ::clang::BuiltinType::SveBFloat16x2:
-        return mdl_.bt_arm_sve_bfloat16x2();
+        return ctx_.mdl().bt_arm_sve_bfloat16x2();
     case ::clang::BuiltinType::SveBFloat16x3:
-        return mdl_.bt_arm_sve_bfloat16x3();
+        return ctx_.mdl().bt_arm_sve_bfloat16x3();
     case ::clang::BuiltinType::SveBFloat16x4:
-        return mdl_.bt_arm_sve_bfloat16x4();
+        return ctx_.mdl().bt_arm_sve_bfloat16x4();
 
     case ::clang::BuiltinType::SveBool:
-        return mdl_.bt_arm_sve_boolx1();
+        return ctx_.mdl().bt_arm_sve_boolx1();
     case ::clang::BuiltinType::SveBoolx2:
-        return mdl_.bt_arm_sve_boolx2();
+        return ctx_.mdl().bt_arm_sve_boolx2();
     case ::clang::BuiltinType::SveBoolx4:
-        return mdl_.bt_arm_sve_boolx4();
+        return ctx_.mdl().bt_arm_sve_boolx4();
 
     case ::clang::BuiltinType::SveCount:
-        return mdl_.bt_arm_sve_count();
+        return ctx_.mdl().bt_arm_sve_count();
 
     // case ::clang::BuiltinType::SveBFloat16x2:
-    //     return mdl_.bt_arm_sve_bfloat16x2();
+    //     return ctx_.mdl().bt_arm_sve_bfloat16x2();
     // case ::clang::BuiltinType::SveBFloat16x3:
-    //     return mdl_.bt_arm_sve_bfloat16x3();
+    //     return ctx_.mdl().bt_arm_sve_bfloat16x3();
 
     // case ::clang::BuiltinType::sve:
-    //     return mdl_.bt_arm_sve_bfloat16x4();
+    //     return ctx_.mdl().bt_arm_sve_bfloat16x4();
 
     default:
         std::cout << "UNKNOWN BUILTIN TYPE:\n" << std::endl;
@@ -450,27 +446,27 @@ type_t * ast_converter::convert_builtin_type(const ::clang::BuiltinType * clang_
 
 pointer_type * ast_converter::convert_pointer_type(const ::clang::PointerType * clang_ptr_type) {
     auto pointee_type = convert_type(clang_ptr_type->getPointeeType());
-    return mdl_.get_or_create_ptr_type(pointee_type);
+    return ctx_.mdl().get_or_create_ptr_type(pointee_type);
 }
 
 
 lvalue_reference_type *
 ast_converter::convert_lvalue_reference_type(const ::clang::LValueReferenceType * clang_ref_type) {
     auto base_type = convert_type(clang_ref_type->getPointeeType());
-    return mdl_.get_or_create_lvalue_ref_type(base_type);
+    return ctx_.mdl().get_or_create_lvalue_ref_type(base_type);
 }
 
 
 rvalue_reference_type *
 ast_converter::convert_rvalue_reference_type(const ::clang::RValueReferenceType * clang_ref_type) {
     auto base_type = convert_type(clang_ref_type->getPointeeType());
-    return mdl_.get_or_create_rvalue_ref_type(base_type);
+    return ctx_.mdl().get_or_create_rvalue_ref_type(base_type);
 }
 
 
 array_type * ast_converter::convert_array_type(const ::clang::ConstantArrayType * clang_arr_type) {
     auto elt_type = convert_type(clang_arr_type->getElementType());
-    return mdl_.get_or_create_arr_type(elt_type.type(), clang_arr_type->getSize().getLimitedValue());
+    return ctx_.mdl().get_or_create_arr_type(elt_type.type(), clang_arr_type->getSize().getLimitedValue());
 }
 
 
@@ -481,7 +477,7 @@ type_template_parameter * ast_converter::convert_type_template_param_type(
 
     // searching for template declaration in the chain of parent declaration contexts,
 
-    auto c_decl_ctx = clang_ctx_;
+    auto c_decl_ctx = ctx_.clang_decl_ctx();
     while (true) {
         if (auto decl = ::clang::dyn_cast<::clang::Decl>(c_decl_ctx)) {
             if (auto pars = decl->getDescribedTemplateParams(); pars != nullptr) {
@@ -591,7 +587,7 @@ ast_converter::convert_function_type(const ::clang::FunctionType * clang_func_ty
 
     if (::clang::dyn_cast<::clang::FunctionNoProtoType>(clang_func_type)) {
         // K&R function without parameters
-        return mdl_.get_or_create_func_type(ret_type);
+        return ctx_.mdl().get_or_create_func_type(ret_type);
     }
 
     auto clang_func_proto_type = ::clang::dyn_cast<::clang::FunctionProtoType>(clang_func_type);
@@ -608,7 +604,7 @@ ast_converter::convert_function_type(const ::clang::FunctionType * clang_func_ty
     };
     auto converted_params = clang_params | std::ranges::views::transform(convert_param);
 
-    return mdl_.get_or_create_func_type_r(ret_type, converted_params);
+    return ctx_.mdl().get_or_create_func_type_r(ret_type, converted_params);
 }
 
 
@@ -632,13 +628,13 @@ record_type * ast_converter::convert_record_type(const ::clang::RecordType * cla
 
 dependent_type *
 ast_converter::convert_dependent_type(const ::clang::DependentNameType * clang_type) {
-    return ctx_->create_entity<dependent_type>();
+    return ctx_.decl_ctx()->create_entity<dependent_type>();
 }
 
 
 decltype_type *
 ast_converter::convert_decltype_type(const ::clang::DecltypeType * clang_type) {
-    return ctx_->create_entity<decltype_type>();
+    return ctx_.decl_ctx()->create_entity<decltype_type>();
 }
 
 
@@ -675,7 +671,7 @@ void ast_converter::convert_decl(const ::clang::Decl * clang_decl) {
 
 
 namespace_ * ast_converter::convert_ns(const ::clang::NamespaceDecl * clang_ns) {
-    auto parent_ns = dynamic_cast<namespace_*>(ctx_);
+    auto parent_ns = dynamic_cast<namespace_*>(ctx_.decl_ctx());
     assert(parent_ns && "parent decl context for namespace is not a namespace");
 
     // getting existing or creating new namespace in code model
@@ -687,7 +683,7 @@ namespace_ * ast_converter::convert_ns(const ::clang::NamespaceDecl * clang_ns) 
     }
 
     // setting new decl context
-    context_setter csetter{*this, ns, clang_ns};
+    conv_context::decl_context_setter csetter{ctx_, ns, clang_ns};
 
     // adding namespace into map of entitites
     add_cm_entity(clang_ns, ns);
@@ -731,7 +727,7 @@ typedef_type * ast_converter::convert_typedef(const ::clang::TypedefNameDecl * c
 
     // creating typedef type in namespace or record
     auto nm = clang_typedef_decl->getNameAsString();
-    auto td_type = ctx_->create_typedef(nm, base_type);
+    auto td_type = ctx_.decl_ctx()->create_typedef(nm, base_type);
     td_type->set_access_lev(get_clang_decl_acc_spec(clang_typedef_decl));
     td_type->set_loc(convert_loc(clang_typedef_decl->getCanonicalDecl()->getLocation()));
 
@@ -755,12 +751,12 @@ function * ast_converter::convert_function(const ::clang::FunctionDecl * clang_f
        method_decl != nullptr && !method_decl->isStatic())
     {
         // context must be a record
-        auto rec = dynamic_cast<record*>(ctx_);
+        auto rec = dynamic_cast<record*>(ctx_.decl_ctx());
         assert(rec && "context must be a record for method declaration");
 
         func = rec->create_method(nm);
     } else {
-        func = ctx_->create_function(nm);
+        func = ctx_.decl_ctx()->create_function(nm);
     }
 
     func->set_access_lev(get_clang_decl_acc_spec(clang_func_decl));
@@ -770,7 +766,7 @@ function * ast_converter::convert_function(const ::clang::FunctionDecl * clang_f
     add_cm_entity(clang_func_decl, func);
 
     // setting function as current decl context
-    context_setter csetter{*this, func, clang_func_decl};
+    conv_context::decl_context_setter csetter{ctx_, func, clang_func_decl};
 
     // converting function return type and parameters
     convert_function_ret_type_and_params(func, clang_func_decl);
@@ -792,7 +788,7 @@ variable * ast_converter::convert_variable(const ::clang::VarDecl * clang_var_de
 
     // creating new variable
     auto nm = clang_var_decl->getNameAsString();
-    var = ctx_->create_var(nm, var_type);
+    var = ctx_.decl_ctx()->create_var(nm, var_type);
     var->set_access_lev(get_clang_decl_acc_spec(clang_var_decl));
 
     add_cm_entity(clang_var_decl, var);
@@ -827,7 +823,7 @@ ast_converter::convert_template_class(const ::clang::ClassTemplateDecl * clang_t
     auto clang_rec_decl = clang_templ_decl->getTemplatedDecl();
 
     // setter for setting current contexts
-    context_setter csetter{*this};
+    conv_context::decl_context_setter csetter{ctx_};
 
     // looking for existing CM declaration associated with clang template declaration
     auto rec = get_cm_entity_as<template_record>(clang_rec_decl);
@@ -845,7 +841,7 @@ ast_converter::convert_template_class(const ::clang::ClassTemplateDecl * clang_t
 
         // creating new template record
         auto knd = clang_tag_kind_to_record_kind(clang_rec_decl->getTagKind());
-        auto trec = ctx_->create_template_record(clang_rec_decl->getNameAsString(), knd);
+        auto trec = ctx_.decl_ctx()->create_template_record(clang_rec_decl->getNameAsString(), knd);
         trec->set_loc(convert_loc(clang_rec_def->getLocation()));
         trec->this_type()->set_loc(trec->loc());
         rec = trec;
@@ -886,7 +882,7 @@ template_record_partial_specialization * ast_converter::convert_template_partial
     }
 
     // context setter for template specialization
-    context_setter csetter{*this};
+    conv_context::decl_context_setter csetter{ctx_};
 
     // looking for existing CM entity associated with clang declaration
     auto spec = get_cm_entity_as<template_record_partial_specialization>(clang_decl);
@@ -991,12 +987,12 @@ ast_converter::convert_template_function(const ::clang::FunctionTemplateDecl * c
         method_decl != nullptr && !method_decl->isStatic())
     {
         // context must be a record
-        auto rec = dynamic_cast<record*>(ctx_);
+        auto rec = dynamic_cast<record*>(ctx_.decl_ctx());
         assert(rec && "context must be a record for method declaration");
 
         func = rec->create_template_method(nm);
     } else {
-        func = ctx_->create_template_function(nm);
+        func = ctx_.decl_ctx()->create_template_function(nm);
     }
 
     func->set_access_lev(get_clang_decl_acc_spec(clang_func_decl));
@@ -1006,7 +1002,7 @@ ast_converter::convert_template_function(const ::clang::FunctionTemplateDecl * c
     add_cm_entity(clang_func_decl, func);
 
     // setting current context to function
-    context_setter csetter{*this, func, clang_func_decl};
+    conv_context::decl_context_setter csetter{ctx_, func, clang_func_decl};
 
     // converting template parameters
     convert_template_params(func, clang_templ_pars);
@@ -1070,12 +1066,12 @@ void ast_converter::convert_linkage_spec(const ::clang::LinkageSpecDecl * decl) 
 
 
 source_location ast_converter::convert_loc(const ::clang::SourceLocation & loc) const {
-    auto ploc = clang_ast_ctx_->getSourceManager().getPresumedLoc(loc);
+    auto ploc = ctx_.clang_ctx().getSourceManager().getPresumedLoc(loc);
     if (!ploc.isValid()) {
         return {};
     }
 
-    auto file = mdl_.source(ploc.getFilename());
+    auto file = ctx_.mdl().source(ploc.getFilename());
     return source_location{file, ploc.getLine(), ploc.getColumn()};
 }
 
@@ -1088,7 +1084,7 @@ void ast_converter::fill_record_contents(cm::record * rec,
     }
 
     // setting current declaration context
-    context_setter csetter{*this, rec, clang_record_decl};
+    conv_context::decl_context_setter csetter{ctx_, rec, clang_record_decl};
 
     // adding record bases
     if (auto clang_cxx_record_decl = ::clang::dyn_cast<::clang::CXXRecordDecl>(clang_record_decl)) {
@@ -1242,21 +1238,12 @@ template_argument_desc_vector ast_converter::convert_template_arguments(
 
 
 context_entity * ast_converter::get_cm_entity(const ::clang::Decl * clang_decl) {
-    auto canon_decl = clang_decl->getCanonicalDecl();
-
-    auto it = decls_.find(canon_decl);
-    if (it == decls_.end()) {
-        return nullptr;
-    }
-
-    return it->second;
+    return ctx_.get_cm_entity(clang_decl);
 }
 
 
 void ast_converter::add_cm_entity(const ::clang::Decl * clang_decl, context_entity * cm_ent) {
-    auto canon_decl = clang_decl->getCanonicalDecl();
-    auto [it, inserted] = decls_.emplace(canon_decl, cm_ent);
-    assert(inserted && "code model context_entity is already associated with clang declaration");
+    ctx_.add_cm_entity(clang_decl, cm_ent);
 }
 
 
@@ -1270,13 +1257,13 @@ record_type * ast_converter::create_new_record(const ::clang::RecordDecl * clang
     // creating new record
     record_type * rec = nullptr;
     if (clang_rec_decl->getName().empty()) {
-        rec = ctx_->create_record(knd);
+        rec = ctx_.decl_ctx()->create_record(knd);
         rec->set_access_lev(get_clang_decl_acc_spec(clang_rec_decl));
     } else {
         auto nm = clang_rec_decl->getNameAsString();
-        rec = ctx_->find_named_entity<named_record_type>(nm);
+        rec = ctx_.decl_ctx()->find_named_entity<named_record_type>(nm);
         if (!rec) {
-            rec = ctx_->create_named_record(nm, knd);
+            rec = ctx_.decl_ctx()->create_named_record(nm, knd);
             rec->set_access_lev(get_clang_decl_acc_spec(clang_rec_decl));
         }
     }

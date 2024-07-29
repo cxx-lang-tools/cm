@@ -89,8 +89,8 @@ class ast_converter: public ::clang::RecursiveASTVisitor<ast_converter> {
     };
 public:
     /// Constructs AST converter with specified reference to source code model
-    ast_converter(source_code_model & mdl):
-        cm_conv_{mdl.code_mdl()}, scm_{mdl} {}
+    ast_converter(source_code_model & mdl, ::clang::ASTContext & clang_ctx):
+        cm_conv_{mdl.code_mdl(), clang_ctx}, scm_{mdl}, clang_ast_ctx_{&clang_ctx} {}
 
     /// Default destructor
     ~ast_converter() = default;
@@ -105,7 +105,7 @@ public:
     ast_converter(ast_converter &&) = delete;
 
     /// Converts AST context to source code model
-    void convert(::clang::ASTContext & ctx);
+    void convert();
 
 private:
     /// Traverses namespace declaration

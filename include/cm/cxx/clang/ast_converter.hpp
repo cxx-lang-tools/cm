@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "conv_context.hpp"
 #include "../../cm.hpp"
 #include "../../context_entity.hpp"
 #include "../../record_type.hpp"
@@ -25,73 +26,11 @@ namespace cm::cxx::clang {
 
 /// clang AST to code model converter
 class ast_converter {
-    /// Helper class for settings current declaration contexts and restoring them
-    /// at scope exit
-    struct context_setter {
-    public:
-        /// Constructs setter with invalid state
-        explicit context_setter(ast_converter & conv):
-            conv_{&conv}, old_ctx_{nullptr}, old_clang_ctx_{nullptr} {}
-
-        /// Constructs setter. Sets new current context and clang declaration context
-        /// and stores old contexts in this setter instance.
-        explicit context_setter(ast_converter & conv,
-                                context * ctx,
-                                const ::clang::DeclContext * clang_ctx):
-        conv_{&conv}, old_ctx_{conv.ctx_}, old_clang_ctx_{conv.clang_ctx_} {
-            assert(ctx != nullptr && "invalid context");
-            assert(clang_ctx != nullptr && "invalid clang decl context");
-
-            conv.ctx_ = ctx;
-            conv.clang_ctx_ = clang_ctx;
-        }
-
-        /// Restores old current context and clang declaration context if setter state is valid
-        ~context_setter() {
-            restore();
-        }
-
-        context_setter(const context_setter &) = delete;
-        context_setter & operator=(const context_setter &) = delete;
-        context_setter(context_setter && other) = delete;
-        context_setter & operator=(context_setter && other) = delete;
-
-        /// Sets current context and clang context in AST converter.
-        /// Saves previous contexts. The state of setter must be invalid
-        void set(context * ctx, const ::clang::DeclContext * clang_ctx) {
-            assert(old_ctx_ == nullptr && "the state of setter is not invalid");
-            assert(old_clang_ctx_ == nullptr && "the state of setter is not invalid");
-
-            assert(ctx != nullptr && "context is null");
-            assert(clang_ctx != nullptr && "clang decl context is null");
-
-            old_ctx_ = conv_->ctx_;
-            old_clang_ctx_ = conv_->clang_ctx_;
-
-            conv_->ctx_ = ctx;
-            conv_->clang_ctx_ = clang_ctx;
-        }
-
-        /// Restores old contexts in AST converter. Sets state of setter to invalid.
-        void restore() {
-            if (conv_) {
-                conv_->ctx_ = old_ctx_;
-                conv_->clang_ctx_ = old_clang_ctx_;
-                old_ctx_ = nullptr;
-                old_clang_ctx_ = nullptr;
-            }
-        }
-
-    private:
-        ast_converter * conv_;                          ///< Pointer to AST converter
-        context * old_ctx_;                             ///< Previous context
-        const ::clang::DeclContext * old_clang_ctx_;    ///< Previous clang context
-    };
-
 public:
     /// Constructs AST converter with specified reference to global code model
     /// and clang AST context
-    ast_converter(code_model & mdl): mdl_{mdl} {}
+    ast_converter(code_model & mdl, const ::clang::ASTContext & ctx):
+        ctx_{mdl, ctx} {}
 
     /// Default destructor
     ~ast_converter() = default;
@@ -106,7 +45,7 @@ public:
     ast_converter(ast_converter &&) = default;
 
     /// Converts AST context to code model
-    void convert(const ::clang::ASTContext & ctx);
+    void convert();
 
 
     //////////////////////////////////////////////////////////////////////
@@ -215,14 +154,7 @@ public:
     /// Returns nullptr if context_entity is not found.
     template <typename Entity>
     Entity * get_cm_entity_as(const ::clang::Decl * clang_decl) {
-        auto ent = get_cm_entity(clang_decl);
-        if (!ent) {
-            return nullptr;
-        }
-
-        auto casted_ent = dynamic_cast<Entity*>(ent);
-        assert(casted_ent && "existing context_entity type mismatch");
-        return casted_ent;
+        return ctx_.get_cm_entity_as<Entity>(clang_decl);
     }
 
     /// Adds code model context_entity associated with clang declaration.
@@ -263,17 +195,8 @@ private:
     find_type_template_parameter_decl(const ::clang::Decl * curr_decl,
                                       const ::clang::TemplateTypeParmType * type);
 
-
-    code_model & mdl_;      ///< Reference to code model
-
-    context * ctx_ = nullptr;                           ///< Current code model context
-    const ::clang::DeclContext * clang_ctx_ = nullptr;  ///< Current clang decl context
-
-    /// Clang AST context
-    const ::clang::ASTContext * clang_ast_ctx_ = nullptr;
-
-    /// Map from clang canonical declarations to code model entities
-    std::map<const ::clang::Decl *, context_entity *> decls_;
+    /// Converting context
+    conv_context ctx_;
 };
 
 
