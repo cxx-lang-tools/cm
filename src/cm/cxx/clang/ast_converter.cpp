@@ -24,7 +24,7 @@
 #include <ranges>
 
 
-namespace cm::clang {
+namespace cm::cxx::clang {
 
 
 /// Converts clang tag kind to record kind

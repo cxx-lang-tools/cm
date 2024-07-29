@@ -14,7 +14,7 @@
 #include <fstream>
 
 
-namespace cm::clang::test {
+namespace cm::cxx::clang::test {
 
 
 /// Fixture for parsing tests

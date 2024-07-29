@@ -135,7 +135,7 @@ int main(int argc, char * argv[]) {
 
         // creating and parsing code model
         cm::code_model mdl;
-        cm::clang::parse_source_file(mdl, var_map["input-file"].as<fs::path>(), compile_opts);
+        cm::cxx::clang::parse_source_file(mdl, var_map["input-file"].as<fs::path>(), compile_opts);
 
         cm::dump_options dump_opts;
         dump_opts.builtins = var_map.count("dump-builtins") > 0;

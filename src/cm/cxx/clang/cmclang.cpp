@@ -16,7 +16,7 @@
 #include <clang/AST/Decl.h>
 
 
-namespace cm::clang {
+namespace cm::cxx::clang {
 
 
 /// Helper class for accessing TheASTUnit member from CXTranslationUnit instance

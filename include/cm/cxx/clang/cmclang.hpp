@@ -14,7 +14,7 @@
 #include <vector>
 
 
-namespace cm::clang {
+namespace cm::cxx::clang {
 
 
 /// Parses code model from source file

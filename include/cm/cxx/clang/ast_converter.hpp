@@ -20,7 +20,7 @@
 #include <clang/AST/ASTContext.h>
 
 
-namespace cm::clang {
+namespace cm::cxx::clang {
 
 
 /// clang AST to code model converter

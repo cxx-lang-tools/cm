@@ -23,7 +23,7 @@
 #include <ranges>
 
 
-namespace cm::src::clang {
+namespace cm::src::cxx::clang {
 
 
 void ast_converter::convert(::clang::ASTContext & ctx) {

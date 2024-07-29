@@ -16,7 +16,7 @@
 namespace fs = std::filesystem;
 
 
-namespace cm::clang::test {
+namespace cm::cxx::clang::test {
 
 
 BOOST_FIXTURE_TEST_SUITE(parse_simple_tests, parse_fixture)

@@ -127,7 +127,7 @@ int main(int argc, char * argv[]) {
 
         // creating and parsing code model
         cm::src::source_code_model mdl;
-        cm::src::clang::parse_source_file(mdl,
+        cm::src::cxx::clang::parse_source_file(mdl,
                                                 var_map["input-file"].as<fs::path>(),
                                                 compile_opts);
 

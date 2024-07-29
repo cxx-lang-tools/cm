@@ -13,7 +13,7 @@
 #include <filesystem>
 
 
-namespace cm::src::clang::test {
+namespace cm::src::cxx::clang::test {
 
 
 /// Fixture for parsing tests

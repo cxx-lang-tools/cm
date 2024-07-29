@@ -15,7 +15,7 @@
 #include <clang/AST/RecursiveASTVisitor.h>
 
 
-namespace cm::src::clang {
+namespace cm::src::cxx::clang {
 
 
 /// clang AST to code model converter
@@ -269,8 +269,8 @@ private:
                                const ::clang::ParmVarDecl * clang_decl);
 
 
-    cm::clang::ast_converter cm_conv_;  ///< Code model AST converter
-    source_code_model & scm_;           ///< Reference to source code model
+    cm::cxx::clang::ast_converter cm_conv_; ///< Code model AST converter
+    source_code_model & scm_;               ///< Reference to source code model
 
     /// Clang AST context
     ::clang::ASTContext * clang_ast_ctx_ = nullptr;

@@ -13,7 +13,7 @@
 
 
 
-namespace cm::src::clang::test {
+namespace cm::src::cxx::clang::test {
 
 
 BOOST_FIXTURE_TEST_SUITE(parse_simple_tests, parse_fixture)
