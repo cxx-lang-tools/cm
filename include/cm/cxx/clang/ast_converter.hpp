@@ -41,8 +41,8 @@ public:
     /// Deleted copy assignment operator
     ast_converter & operator=(const ast_converter &) = delete;
 
-    /// Default move constructor
-    ast_converter(ast_converter &&) = default;
+    /// Deleted move constructor
+    ast_converter(ast_converter &&) = delete;
 
     /// Converts AST context to code model
     void convert();
@@ -98,48 +98,6 @@ public:
     /// Converts declaration
     void convert_decl(const ::clang::Decl * clang_decl);
 
-    /// Converts namespace
-    namespace_ * convert_ns(const ::clang::NamespaceDecl * clang_ns);
-
-    /// Converts record
-    record_type * convert_record(const ::clang::RecordDecl * clang_record_decl);
-
-    /// Converts typedef
-    typedef_type * convert_typedef(const ::clang::TypedefNameDecl * clang_typedef_decl);
-
-    /// Converts function declaration
-    function * convert_function(const ::clang::FunctionDecl * clang_func_decl);
-
-    /// Converts variable declaration
-    variable * convert_variable(const ::clang::VarDecl * clang_var_decl);
-
-    /// Converts field declaration
-    field * convert_field(cm::record * rec, const ::clang::FieldDecl * clang_field_decl);
-
-    /// Converts class template declaration
-    template_record * convert_template_class(const ::clang::ClassTemplateDecl * clang_templ_decl);
-
-    /// Converts class template partial specialization
-    template_record_partial_specialization * convert_template_partial_specialization(
-            const ::clang::ClassTemplatePartialSpecializationDecl * clang_decl);
-
-    /// Converts class template specialization declaration
-    record * convert_template_class_spec(
-            cm::template_record * templ,
-            const ::clang::ClassTemplateSpecializationDecl * clang_spec_decl);
-
-    /// Converts function template declaration
-    template_function *
-    convert_template_function(const ::clang::FunctionTemplateDecl * clang_templ_decl);
-
-    /// Converts funciton template instantiation declaration
-    template_function_instantiation *
-    convert_template_function_inst(cm::template_function * templ,
-                                   const ::clang::FunctionDecl * clang_func);
-
-    /// Converts linkage specification declaration
-    void convert_linkage_spec(const ::clang::LinkageSpecDecl * decl);
-
 
     //////////////////////////////////////////////////////////////////////
     // Entities
@@ -163,37 +121,6 @@ public:
 private:
     /// Converts source location
     source_location convert_loc(const ::clang::SourceLocation & loc) const;
-
-    /// Converts all record contents and adds it to code model record
-    void fill_record_contents(cm::record * rec, const ::clang::RecordDecl * clang_record_decl);
-
-    /// Converts and adds template parameters from clang AST to code model template
-    void convert_template_params(templated_entity * templ,
-                                 const ::clang::TemplateParameterList * clang_params);
-
-    /// Updates template parameters locations and names to match parameters from the list
-    void update_template_params(templated_entity * templ,
-                                const ::clang::TemplateParameterList * clang_params);
-
-    /// Converts function return type and paramters
-    void convert_function_ret_type_and_params(
-        function * func, const ::clang::FunctionDecl * clang_func);
-
-    /// Updates function parameter names and locations to match marapeters from clang declaration
-    void update_function_params(function * func, const ::clang::FunctionDecl * clang_func);
-
-    /// Converts template arguments
-    template_argument_desc_vector
-    convert_template_arguments(const ::clang::ArrayRef<::clang::TemplateArgument> & args);
-
-    /// Creates new empty record in context for clang record declaration
-    record_type * create_new_record(const ::clang::RecordDecl * clang_rec_decl);
-
-    /// Recursively searches for type template parameter dclaration
-    /// in the chain of parent tempalte declarations
-    const ::clang::TemplateTypeParmDecl *
-    find_type_template_parameter_decl(const ::clang::Decl * curr_decl,
-                                      const ::clang::TemplateTypeParmType * type);
 
     /// Converting context
     conv_context ctx_;

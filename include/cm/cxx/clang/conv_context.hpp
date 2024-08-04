@@ -87,8 +87,13 @@ public:
 
 
     /// Constructs converter context
-    conv_context(code_model & mdl, const ::clang::ASTContext & clang_ctx):
+    explicit conv_context(code_model & mdl, const ::clang::ASTContext & clang_ctx):
         mdl_{mdl}, clang_ctx_{clang_ctx} {}
+
+    conv_context(const conv_context &) = delete;
+    conv_context(conv_context &&) = delete;
+    conv_context & operator=(const conv_context &) = delete;
+    conv_context & operator=(conv_context &&) = delete;
 
     /// Returns reference to code model
     code_model & mdl() const { return mdl_; }

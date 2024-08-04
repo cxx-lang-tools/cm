@@ -6,8 +6,20 @@ find_package(Clang REQUIRED CONFIG)
 add_library(cm-cxx-clang
             ast_converter.cpp
             cmclang.cpp
+            convert_decl.cpp
+            convert_decl.hpp
+            convert_loc.cpp
+            convert_loc.hpp
+            convert_record.cpp
+            convert_record.hpp
+            convert_template.cpp
+            convert_template.hpp
+            convert_type.cpp
+            convert_type.hpp
             import.hpp
             pch.hpp
+            utils.cpp
+            utils.hpp
            )
 
 target_precompile_headers(cm-cxx-clang PRIVATE pch.hpp)
