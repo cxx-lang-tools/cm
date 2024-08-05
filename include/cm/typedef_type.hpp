@@ -20,14 +20,20 @@ namespace cm {
 class typedef_type: public named_type {
 public:
     /// Constructs typedef type with specified context, name and base qual type
-    typedef_type(context * ctx, const std::string & nm, const qual_type & b):
+    typedef_type(context * ctx,
+                 const std::string & nm,
+                 const qual_type & b = {}):
         named_type(ctx, nm), context_type(ctx), context_entity(ctx), base_{b} {
-        base_.type()->add_use(this);
+        if (!base_.is_null()) {
+            base_.type()->add_use(this);
+        }
     }
 
     /// Destructor, removes use of base type
-    ~typedef_type() {
-        base_.type()->remove_use(this);
+    ~typedef_type() override {
+        if (!base_.is_null()) {
+            base_.type()->remove_use(this);
+        }
     }
 
     /// Returns base type
@@ -43,9 +49,15 @@ public:
             return;
         }
 
-        base_->remove_use(this);
+        if (!base_.is_null()) {
+            base_->remove_use(this);
+        }
+
         base_ = b;
-        base_->add_use(this);
+
+        if (!base_.is_null()) {
+            base_->add_use(this);
+        }
     }
 
     /// Dumps typedef type to output stream

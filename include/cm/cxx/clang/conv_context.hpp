@@ -142,6 +142,16 @@ public:
         return casted_ent;
     }
 
+    // /// Finds existing code model entity associated with clang declaration or creates
+    // /// a new one. Found entity must be convertible to specified type.
+    // template <std::derived_from<context_entity> Entity>
+    // Entity * get_or_create_entity(const ::clang::Decl * clang_decl) {
+    //     auto ent = get_cm_entity(clang_decl);
+    //     if (!ent) {
+    //         //auto res = std::make
+    //     }
+    // }
+
     /// Adds code model context entity associated with clang declaration.
     void add_cm_entity(const ::clang::Decl * clang_decl, context_entity * cm_ent) {
         auto canon_decl = clang_decl->getCanonicalDecl();

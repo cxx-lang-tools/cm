@@ -1,0 +1,6 @@
+
+namespace foo {
+}
+
+namespace foo {
+}

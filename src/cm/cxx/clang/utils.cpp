@@ -21,4 +21,12 @@ std::string dump_decl_to_string(const ::clang::Decl * decl) {
 }
 
 
+std::string dump_type_to_string(const ::clang::Type * type, const ::clang::ASTContext & ctx) {
+    std::string str;
+    llvm::raw_string_ostream lstr{str};
+    type->dump(lstr, ctx);
+    return str;
+}
+
+
 }

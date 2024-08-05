@@ -39,6 +39,10 @@ void ast_converter::convert() {
     // traversing over all top level declarations in translation unit
     auto tu_decl = ctx_.clang_ctx().getTranslationUnitDecl();
 
+    // adding association with entire code model for translation unit decl
+    ctx_.add_cm_entity(tu_decl, &ctx_.mdl());
+
+    // setting translation unit as current decl context
     conv_context::decl_context_setter csetter{ctx_, &ctx_.mdl(), tu_decl};
 
     CM_CLANG_LOG_TRACE << "converting translation unit:\n" << dump_decl_to_string(tu_decl);
@@ -57,67 +61,67 @@ void ast_converter::convert() {
 
 
 qual_type ast_converter::convert_type(const ::clang::QualType & clang_qual_type) {
-    return clang::convert_type(ctx_, clang_qual_type);
+    return clang::get_or_create_type(ctx_, clang_qual_type);
 }
 
 
 type_t * ast_converter::convert_builtin_type(const ::clang::BuiltinType * clang_bt_type) {
-    return clang::convert_builtin_type(ctx_, clang_bt_type);
+    return clang::get_or_create_builtin_type(ctx_, clang_bt_type);
 }
 
 
 pointer_type * ast_converter::convert_pointer_type(const ::clang::PointerType * clang_ptr_type) {
-    return clang::convert_pointer_type(ctx_, clang_ptr_type);
+    return clang::get_or_create_pointer_type(ctx_, clang_ptr_type);
 }
 
 
 lvalue_reference_type *
 ast_converter::convert_lvalue_reference_type(const ::clang::LValueReferenceType * clang_ref_type) {
-    return clang::convert_lvalue_reference_type(ctx_, clang_ref_type);
+    return clang::get_or_create_lvalue_reference_type(ctx_, clang_ref_type);
 }
 
 
 rvalue_reference_type *
 ast_converter::convert_rvalue_reference_type(const ::clang::RValueReferenceType * clang_ref_type) {
-    return clang::convert_rvalue_reference_type(ctx_, clang_ref_type);
+    return clang::get_or_create_rvalue_reference_type(ctx_, clang_ref_type);
 }
 
 
 array_type * ast_converter::convert_array_type(const ::clang::ConstantArrayType * clang_arr_type) {
-    return clang::convert_array_type(ctx_, clang_arr_type);
+    return clang::get_or_create_array_type(ctx_, clang_arr_type);
 }
 
 
 type_template_parameter * ast_converter::convert_type_template_param_type(
         const ::clang::TemplateTypeParmType * type) {
 
-    return clang::convert_type_template_param_type(ctx_, type);
+    return clang::get_or_create_type_template_param_type(ctx_, type);
 }
 
 
 type_t *
 ast_converter::convert_template_spec_type(const ::clang::TemplateSpecializationType * type) {
-    return clang::convert_template_spec_type(ctx_, type);
+    return clang::get_or_create_template_spec_type(ctx_, type);
 }
 
 
 function_type * ast_converter::convert_function_type(const ::clang::FunctionType * type) {
-    return clang::convert_function_type(ctx_, type);
+    return clang::get_or_create_function_type(ctx_, type);
 }
 
 
 record_type * ast_converter::convert_record_type(const ::clang::RecordType * type) {
-    return clang::convert_record_type(ctx_, type);
+    return clang::get_or_create_record_type(ctx_, type);
 }
 
 
 dependent_type * ast_converter::convert_dependent_type(const ::clang::DependentNameType * type) {
-    return clang::convert_dependent_type(ctx_, type);
+    return clang::get_or_create_dependent_type(ctx_, type);
 }
 
 
 decltype_type * ast_converter::convert_decltype_type(const ::clang::DecltypeType * type) {
-    return clang::convert_decltype_type(ctx_, type);
+    return clang::get_or_create_decltype_type(ctx_, type);
 }
 
 

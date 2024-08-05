@@ -12,6 +12,8 @@
 #include "convert_loc.hpp"
 #include "convert_record.hpp"
 #include "convert_type.hpp"
+#include "log.hpp"
+#include "utils.hpp"
 
 #include <clang/AST/DeclTemplate.h>
 
@@ -76,7 +78,7 @@ void convert_template_params(conv_context & ctx,
         if (auto clang_type_par = ::clang::dyn_cast<::clang::TemplateTypeParmDecl>(par)) {
             cm_par = templ->add_type_template_param(par_name);
         } else if (auto clang_val_par = ::clang::dyn_cast<::clang::NonTypeTemplateParmDecl>(par)) {
-            auto par_type = convert_type(ctx, clang_val_par->getType());
+            auto par_type = get_or_create_type(ctx, clang_val_par->getType());
             cm_par = templ->add_value_template_param(par_name, par_type.type());
         } else if (auto clang_templ_par = ::clang::dyn_cast<::clang::TemplateTemplateParmDecl>(par)) {
             // TODO: implement template template parameters
@@ -86,7 +88,7 @@ void convert_template_params(conv_context & ctx,
         // } else if (auto clang_obj_par = ::clang::dyn_cast<::clang::TemplateParamObjectDecl>(par)) {
         //     // TODO: check if we need something special for template object parameters other
         //     // than name and type
-        //     auto par_type = convert_type(clang_val_par->getType());
+        //     auto par_type = get_or_create_type(clang_val_par->getType());
         //     rec->add_value_template_param(par_name, par_type.type());
 
         } else {
@@ -112,7 +114,7 @@ convert_template_arguments(conv_context & ctx,
 
         switch (targ.getKind()) {
         case ::clang::TemplateArgument::ArgKind::Type: {
-            res.push_back(convert_type(ctx, targ.getAsType()));
+            res.push_back(get_or_create_type(ctx, targ.getAsType()));
             break;
         }
         case ::clang::TemplateArgument::ArgKind::Integral: {
@@ -341,14 +343,13 @@ template_function_instantiation *
 convert_template_function_inst(conv_context & ctx,
                                cm::template_function * templ,
                                const ::clang::FunctionDecl * clang_func) {
+    CM_CLANG_LOG_TRACE << "converting template function inst:\n" << dump_decl_to_string(clang_func);
 
     assert(clang_func->isTemplateInstantiation() && "function is not a template instantiation");
 
-    // looking for existing code model entity associated with clang declaration
+    // checking that there is no existing entity associated with template instantiation
     auto func = ctx.get_cm_entity_as<template_function_instantiation>(clang_func);
-    if (func) {
-        return func;
-    }
+    assert(func == nullptr && "found existing associated template function instantiation entity");
 
     // converting template arguments
     auto clang_args = clang_func->getTemplateSpecializationArgs();

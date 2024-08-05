@@ -253,7 +253,7 @@ public:
     typedef_type * find_typedef(const std::string & name);
 
     /// Creates nested typedef type in this context
-    typedef_type * create_typedef(const std::string & name, const qual_type & base);
+    typedef_type * create_typedef(const std::string & name, const qual_type & base = {});
 
 
     //////////////////////////////////////////////////////////////////////

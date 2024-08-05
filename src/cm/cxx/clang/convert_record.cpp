@@ -51,7 +51,9 @@ access_level get_clang_decl_acc_level(const ::clang::Decl * decl) {
 }
 
 
-record_type * create_new_record(conv_context & ctx, const ::clang::RecordDecl * clang_rec_decl) {
+record_type * create_new_record(conv_context & ctx,
+                                context * parent_ctx,
+                                const ::clang::RecordDecl * clang_rec_decl) {
     CM_CLANG_LOG_DEBUG << "creating new record for clang decl: " << clang_rec_decl;
     CM_CLANG_LOG_TRACE << "clang record decl dump:\n" << dump_decl_to_string(clang_rec_decl);
 
@@ -61,25 +63,19 @@ record_type * create_new_record(conv_context & ctx, const ::clang::RecordDecl * 
     // creating new record
     record_type * rec = nullptr;
     if (clang_rec_decl->getName().empty()) {
-        rec = ctx.decl_ctx()->create_record(knd);
-        rec->set_access_lev(get_clang_decl_acc_level(clang_rec_decl));
+        rec = parent_ctx->create_record(knd);
     } else {
         auto nm = clang_rec_decl->getNameAsString();
-        rec = ctx.decl_ctx()->find_named_entity<named_record_type>(nm);
-        if (!rec) {
-            rec = ctx.decl_ctx()->create_named_record(nm, knd);
-            rec->set_access_lev(get_clang_decl_acc_level(clang_rec_decl));
-        }
+        rec = parent_ctx->create_named_record(nm, knd);
     }
+
+    rec->set_access_lev(get_clang_decl_acc_level(clang_rec_decl));
 
     const ::clang::TagDecl * clang_def_rec = clang_rec_decl->getDefinition();
     if (!clang_def_rec) {
         clang_def_rec = clang_rec_decl->getCanonicalDecl();
     }
     rec->set_loc(convert_loc(ctx, clang_def_rec->getSourceRange().getBegin()));
-
-    // adding clang decl -> record_type association
-    ctx.add_cm_entity(clang_rec_decl, rec);
 
     return rec;
 }
@@ -96,7 +92,7 @@ static field * convert_field(conv_context & ctx,
     }
 
     // converting variable type
-    auto var_type = convert_type(ctx, clang_field_decl->getType());
+    auto var_type = get_or_create_type(ctx, clang_field_decl->getType());
 
     // creating new variable
     auto nm = clang_field_decl->getNameAsString();
@@ -124,7 +120,7 @@ void fill_record_contents(conv_context & ctx,
     if (auto clang_cxx_record_decl = ::clang::dyn_cast<::clang::CXXRecordDecl>(clang_record_decl)) {
         for (auto && base : clang_cxx_record_decl->bases()) {
             auto clang_base_type = base.getType().getTypePtr();
-            auto base_type = convert_type(ctx, ::clang::QualType{clang_base_type, 0});
+            auto base_type = get_or_create_type(ctx, ::clang::QualType{clang_base_type, 0});
             rec->add_base(base_type.type());
         }
     }
@@ -152,13 +148,12 @@ void fill_record_contents(conv_context & ctx,
 
 
 record_type * convert_record(conv_context & ctx, const ::clang::RecordDecl * clang_record_decl) {
-    // looking for existing CM context_entity associated with clang declaration
-    auto rec = ctx.get_cm_entity_as<record_type>(clang_record_decl);
-    if (rec == nullptr) {
-        rec = create_new_record(ctx, clang_record_decl);
-    }
+    CM_CLANG_LOG_TRACE << "converting record:\n" << dump_decl_to_string(clang_record_decl);
 
-    // filling record decl context
+    // getting existing or creating new record entity
+    auto rec = get_or_create_decl_entity_as<record_type>(ctx, clang_record_decl);
+
+    // filling record contents
     assert(rec && "record type should not be null here");
     fill_record_contents(ctx, rec, clang_record_decl);
     return rec;

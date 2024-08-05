@@ -15,7 +15,11 @@
 namespace cm::cxx::clang {
 
 
+/// Dumps clang declaration to string
 std::string dump_decl_to_string(const ::clang::Decl * decl);
+
+/// Dumps clang type to string
+std::string dump_type_to_string(const ::clang::Type * type, const ::clang::ASTContext & ctx);
 
 
 }

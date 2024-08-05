@@ -1,0 +1,8 @@
+template func foo<type T>(x: T) -> void;
+
+struct str {
+    method ~str() -> void;
+};
+
+template_instantiation func foo<str>(x: str) -> void;
+func bar() -> void;

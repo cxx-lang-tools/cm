@@ -22,26 +22,98 @@
 namespace cm::cxx::clang {
 
 
+/// Creates context entity for clang declaration
+static context_entity * create_decl_entity(conv_context & ctx, const ::clang::Decl * clang_decl) {
+    CM_CLANG_LOG_TRACE << "create context entity for:\n" << dump_decl_to_string(clang_decl);
+
+    // getting parent context
+    auto clang_decl_ctx = clang_decl->getDeclContext();
+    assert(clang_decl_ctx != nullptr && "invalid parent clang decl context");
+    auto parent_clang_decl = ::clang::dyn_cast<::clang::Decl>(clang_decl_ctx);
+    assert(parent_clang_decl != nullptr && "parent clang decl context is not a declaration");
+    auto parent_ctx = get_or_create_decl_entity_as<context>(ctx, parent_clang_decl);
+
+    if (auto ns = ::clang::dyn_cast<::clang::NamespaceDecl>(clang_decl)) {
+        auto parent_ns = dynamic_cast<namespace_*>(parent_ctx);
+        assert(parent_ns && "parent context for namespace is not a namespace");
+        if (ns->getName().empty()) {
+            return parent_ns->create_anon_namespace();
+        } else {
+            return parent_ns->create_namespace(ns->getNameAsString());
+        }
+    } else if (auto * tcls = ::clang::dyn_cast<::clang::ClassTemplateDecl>(clang_decl)) {
+        auto clang_rec_decl = tcls->getTemplatedDecl();
+        auto knd = clang_tag_kind_to_record_kind(clang_rec_decl->getTagKind());
+        return parent_ctx->create_template_record(tcls->getNameAsString(), knd);
+    } else if (auto p_spec =
+               ::clang::dyn_cast<::clang::ClassTemplatePartialSpecializationDecl>(clang_decl)) {
+        // TODO: do we need this case?
+        // convert_template_partial_specialization(ctx, p_spec);
+        assert(false && "should not reach here");
+        return nullptr;
+    } else if (auto * clang_record_decl = ::clang::dyn_cast<::clang::RecordDecl>(clang_decl)) {
+        return create_new_record(ctx, parent_ctx, clang_record_decl);
+    } else if (auto * td_clang_decl = ::clang::dyn_cast<::clang::TypedefNameDecl>(clang_decl)) {
+        return parent_ctx->create_typedef(td_clang_decl->getNameAsString());
+    } else if (auto * clang_func_decl = ::clang::dyn_cast<::clang::FunctionDecl>(clang_decl)) {
+        // TODO: do we need this case?
+        // convert_function(ctx, clang_func_decl);
+        assert(false && "should not reach here");
+        return nullptr;
+    } else if (auto * clang_var_decl = ::clang::dyn_cast<::clang::VarDecl>(clang_decl)) {
+        // TODO: do we need this case?
+        // convert_variable(ctx, clang_var_decl);
+        assert(false && "should not reach here");
+        return nullptr;
+    } else if (auto * tfunc_decl = ::clang::dyn_cast<::clang::FunctionTemplateDecl>(clang_decl)) {
+        // TODO: do we need this case?
+        // convert_template_function(ctx, tfunc_decl);
+        assert(false && "should not reach here");
+        return nullptr;
+    } else if (auto lspec_decl = ::clang::dyn_cast<::clang::LinkageSpecDecl>(clang_decl)) {
+        // TODO: do we need this case?
+        // convert_linkage_spec(ctx, lspec_decl);
+        assert(false && "should not reach here");
+        return nullptr;
+    } else {
+        CM_CLANG_LOG_ERROR << "unknown decl for creating entity:\n"
+                           << dump_decl_to_string(clang_decl);
+        assert(false && "unknown decl");
+        return nullptr;
+    }
+}
+
+
+context_entity * get_or_create_decl_entity(conv_context & ctx, const ::clang::Decl * clang_decl) {
+    // looking for existing entity assoicated with clang declaration
+    if (auto ent = ctx.get_cm_entity(clang_decl)) {
+        return ent;
+    }
+ 
+    auto ent = create_decl_entity(ctx, clang_decl);
+    ctx.add_cm_entity(clang_decl, ent);
+
+    return ent;
+}
+
+
 /// Converts clang typedef declaration to code model typedef type
 static typedef_type * convert_typedef(conv_context & ctx,
                                       const ::clang::TypedefNameDecl * clang_typedef_decl) {
 
-    // looking for existing typedef
-    if (auto td_type = ctx.get_cm_entity_as<typedef_type>(clang_typedef_decl)) {
-        // TODO: check equality of new declaration with existing type
-        return td_type;
-    }
+    // looking for existing or creating new typedef
+    auto td_type = get_or_create_decl_entity_as<typedef_type>(ctx, clang_typedef_decl);
 
+    // getting or creating entity for base type
     auto clang_base_type = clang_typedef_decl->getUnderlyingType();
-    auto base_type = convert_type(ctx, clang_base_type);
+    auto base_type = get_or_create_type(ctx, clang_base_type);
+    td_type->set_base(base_type);
 
     // creating typedef type in namespace or record
     auto nm = clang_typedef_decl->getNameAsString();
-    auto td_type = ctx.decl_ctx()->create_typedef(nm, base_type);
     td_type->set_access_lev(get_clang_decl_acc_level(clang_typedef_decl));
     td_type->set_loc(convert_loc(ctx, clang_typedef_decl->getCanonicalDecl()->getLocation()));
 
-    ctx.add_cm_entity(clang_typedef_decl, td_type);
     return td_type;
 }
 
@@ -98,7 +170,7 @@ static variable * convert_variable(conv_context & ctx, const ::clang::VarDecl * 
     }
 
     // converting variable type
-    auto var_type = convert_type(ctx, clang_var_decl->getType());
+    auto var_type = get_or_create_type(ctx, clang_var_decl->getType());
 
     // creating new variable
     auto nm = clang_var_decl->getNameAsString();
@@ -111,23 +183,11 @@ static variable * convert_variable(conv_context & ctx, const ::clang::VarDecl * 
 
 
 namespace_ * convert_namespace(conv_context & ctx, const ::clang::NamespaceDecl * clang_ns) {
-
-    auto parent_ns = dynamic_cast<namespace_*>(ctx.decl_ctx());
-    assert(parent_ns && "parent decl context for namespace is not a namespace");
-
-    // getting existing or creating new namespace in code model
-    namespace_ * ns = nullptr;
-    if (clang_ns->getName().empty()) {
-        ns = parent_ns->create_anon_namespace();
-    } else {
-        ns = parent_ns->get_or_create_namespace(clang_ns->getNameAsString());
-    }
+    // creating new or getting existing namespace entity
+    auto ns = get_or_create_decl_entity_as<namespace_>(ctx, clang_ns);
 
     // setting new decl context
     conv_context::decl_context_setter csetter{ctx, ns, clang_ns};
-
-    // adding namespace into map of entitites
-    ctx.add_cm_entity(clang_ns, ns);
 
     // converting top level declarations in namespace
     for (auto && decl : clang_ns->decls()) {
@@ -195,14 +255,14 @@ void convert_function_ret_type_and_params(conv_context & ctx,
                                           function * func,
                                           const ::clang::FunctionDecl * clang_func) {
     // converting function return type
-    func->set_ret_type(convert_type(ctx, clang_func->getReturnType()));
+    func->set_ret_type(get_or_create_type(ctx, clang_func->getReturnType()));
 
     // converting function parameters
     for (auto && par : clang_func->parameters()) {
         if (!par->getName().empty()) {
-            func->add_param(par->getNameAsString(), convert_type(ctx, par->getType()));
+            func->add_param(par->getNameAsString(), get_or_create_type(ctx, par->getType()));
         } else {
-            func->add_param(convert_type(ctx, par->getType()));
+            func->add_param(get_or_create_type(ctx, par->getType()));
         }
     }
 }

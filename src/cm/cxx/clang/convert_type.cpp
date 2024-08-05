@@ -8,67 +8,20 @@
 /// Contains implementations of functions for converting clang types to code model types.
 
 #include "convert_type.hpp"
+#include "convert_decl.hpp"
 #include "convert_record.hpp"
 #include "convert_template.hpp"
+#include "log.hpp"
+#include "utils.hpp"
+
 #include <clang/AST/DeclTemplate.h>
 
 
 namespace cm::cxx::clang {
 
 
-qual_type convert_type(conv_context & ctx, const ::clang::QualType & clang_qual_type) {
-    // converting base type
-    auto clang_type = clang_qual_type.getTypePtr();
-    type_t * type = nullptr;
-    if (auto clang_bt_type = ::clang::dyn_cast<::clang::BuiltinType>(clang_type)) {
-        type = convert_builtin_type(ctx, clang_bt_type);
-    } else if (auto clang_ptr_type = ::clang::dyn_cast<::clang::PointerType>(clang_type)) {
-        type = convert_pointer_type(ctx, clang_ptr_type);
-    } else if (auto clang_ref_type = ::clang::dyn_cast<::clang::LValueReferenceType>(clang_type)) {
-        type = convert_lvalue_reference_type(ctx, clang_ref_type);
-    } else if (auto clang_ref_type = ::clang::dyn_cast<::clang::RValueReferenceType>(clang_type)) {
-        type = convert_rvalue_reference_type(ctx, clang_ref_type);
-    } else if (auto clang_func_type = ::clang::dyn_cast<::clang::FunctionType>(clang_type)) {
-        type = convert_function_type(ctx, clang_func_type);
-    } else if (auto clang_rec_type = ::clang::dyn_cast<::clang::RecordType>(clang_type)) {
-        type = convert_record_type(ctx, clang_rec_type);
-    } else if (auto clang_arr_type = ::clang::dyn_cast<::clang::ConstantArrayType>(clang_type)) {
-        type = convert_array_type(ctx, clang_arr_type);
-    } else if (auto clang_elab_type = ::clang::dyn_cast<::clang::ElaboratedType>(clang_type)) {
-        type = convert_type(ctx, clang_elab_type->getNamedType()).type();
-    } else if (auto clang_td_type = ::clang::dyn_cast<::clang::TypedefType>(clang_type)) {
-        // typedef type must already exist in code model, getting it
-        auto typedef_decl = clang_td_type->getDecl();
-        type = ctx.get_cm_entity_as<typedef_type>(typedef_decl);
-        assert(type && "typedef type must already exist in code model");
-    } else if (auto clang_tpar_type = ::clang::dyn_cast<::clang::TemplateTypeParmType>(clang_type)) {
-        type = convert_type_template_param_type(ctx, clang_tpar_type);
-    } else if (auto clang_templ_spec = ::clang::dyn_cast<::clang::TemplateSpecializationType>(clang_type)) {
-        type = convert_template_spec_type(ctx, clang_templ_spec);
-    } else if (auto clang_subst_tpar = ::clang::dyn_cast<::clang::SubstTemplateTypeParmType>(clang_type)) {
-        // TODO: do we need store this info in code model?
-        type = convert_type(ctx, clang_subst_tpar->getReplacementType()).type();
-    } else if (auto dep_type = ::clang::dyn_cast<::clang::DependentNameType>(clang_type)) {
-        type = convert_dependent_type(ctx, dep_type);
-    } else if (auto dt_type = ::clang::dyn_cast<::clang::DecltypeType>(clang_type)) {
-        type = convert_decltype_type(ctx, dt_type);
-    } else if (auto p_type = ::clang::dyn_cast<::clang::ParenType>(clang_type)) {
-        // ignoring parens in code model
-        return convert_type(ctx, p_type->getInnerType());
-    } else {
-        std::cerr << "DON'T NOT KNOW HOW TO CONVERT TYPE:\n";
-        clang_type->dump();
-        // TODO: diagnostics
-        assert(false && "Don't not know how to convert type");
-    }
-
-    // adding cv-qualifiers
-    assert(type && "type should not be null here");
-    return qual_type{type, clang_qual_type.isLocalConstQualified(), clang_qual_type.isLocalVolatileQualified()};
-}
-
-
-type_t * convert_builtin_type(conv_context & ctx, const ::clang::BuiltinType * clang_bt_type) {
+type_t * get_or_create_builtin_type(conv_context & ctx,
+                                    const ::clang::BuiltinType * clang_bt_type) {
     switch (clang_bt_type->getKind()) {
     case ::clang::BuiltinType::Void:
         return ctx.mdl().bt_void();
@@ -367,38 +320,40 @@ type_t * convert_builtin_type(conv_context & ctx, const ::clang::BuiltinType * c
 }
 
 
-pointer_type * convert_pointer_type(conv_context & ctx,
-                                    const ::clang::PointerType * clang_ptr_type) {
-    auto pointee_type = convert_type(ctx, clang_ptr_type->getPointeeType());
+pointer_type * get_or_create_pointer_type(conv_context & ctx,
+                                          const ::clang::PointerType * clang_ptr_type) {
+    auto pointee_type = get_or_create_type(ctx, clang_ptr_type->getPointeeType());
     return ctx.mdl().get_or_create_ptr_type(pointee_type);
 }
 
 
 lvalue_reference_type *
-convert_lvalue_reference_type(conv_context & ctx,
-                              const ::clang::LValueReferenceType * clang_ref_type) {
-    auto base_type = convert_type(ctx, clang_ref_type->getPointeeType());
+get_or_create_lvalue_reference_type(conv_context & ctx,
+                                    const ::clang::LValueReferenceType * clang_ref_type) {
+    auto base_type = get_or_create_type(ctx, clang_ref_type->getPointeeType());
     return ctx.mdl().get_or_create_lvalue_ref_type(base_type);
 }
 
 
 rvalue_reference_type *
-convert_rvalue_reference_type(conv_context & ctx,
-                              const ::clang::RValueReferenceType * clang_ref_type) {
-    auto base_type = convert_type(ctx, clang_ref_type->getPointeeType());
+get_or_create_rvalue_reference_type(conv_context & ctx,
+                                    const ::clang::RValueReferenceType * clang_ref_type) {
+    auto base_type = get_or_create_type(ctx, clang_ref_type->getPointeeType());
     return ctx.mdl().get_or_create_rvalue_ref_type(base_type);
 }
 
 
-array_type * convert_array_type(conv_context & ctx,
-                                const ::clang::ConstantArrayType * clang_arr_type) {
-    auto elt_type = convert_type(ctx, clang_arr_type->getElementType());
-    return ctx.mdl().get_or_create_arr_type(elt_type.type(), clang_arr_type->getSize().getLimitedValue());
+array_type * get_or_create_array_type(conv_context & ctx,
+                                      const ::clang::ConstantArrayType * clang_arr_type) {
+    auto elt_type = get_or_create_type(ctx, clang_arr_type->getElementType());
+    return ctx.mdl().get_or_create_arr_type(elt_type.type(),
+                                            clang_arr_type->getSize().getLimitedValue());
 }
 
 
 type_template_parameter *
-convert_type_template_param_type(conv_context & ctx, const ::clang::TemplateTypeParmType * type) {
+get_or_create_type_template_param_type(conv_context & ctx,
+                                       const ::clang::TemplateTypeParmType * type) {
 
     templated_entity * templ = nullptr;
 
@@ -452,8 +407,8 @@ convert_type_template_param_type(conv_context & ctx, const ::clang::TemplateType
 }
 
 
-type_t * convert_template_spec_type(conv_context & ctx,
-                                    const ::clang::TemplateSpecializationType * type) {
+type_t * get_or_create_template_spec_type(conv_context & ctx,
+                                          const ::clang::TemplateSpecializationType * type) {
     if (type->isTypeAlias()) {
         assert(false && "type aliases are not implemented yet");
         return nullptr;
@@ -492,25 +447,23 @@ type_t * convert_template_spec_type(conv_context & ctx,
             auto args = convert_template_arguments(ctx, type->template_arguments());
 
             // looking for existing instantiation
-            auto inst = templ->find_dependent_instantiation(args);
-
-            if (inst) {
+            if (auto inst = templ->find_dependent_instantiation(args)) {
                 return inst;
-            } else {
-                // creating template dependent instantiation
-                return templ->create_dependent_instantiation(args);
             }
+
+            // creating template dependent instantiation
+            return templ->create_dependent_instantiation(args);
         }
     }
 }
 
 
-function_type * convert_function_type(conv_context & ctx,
-                                      const ::clang::FunctionType * clang_func_type) {
+function_type * get_or_create_function_type(conv_context & ctx,
+                                            const ::clang::FunctionType * clang_func_type) {
     assert(clang_func_type && "clang function type should not be null here");
 
     // converting return type
-    auto ret_type = convert_type(ctx, clang_func_type->getReturnType());
+    auto ret_type = get_or_create_type(ctx, clang_func_type->getReturnType());
 
     if (::clang::dyn_cast<::clang::FunctionNoProtoType>(clang_func_type)) {
         // K&R function without parameters
@@ -527,7 +480,7 @@ function_type * convert_function_type(conv_context & ctx,
     });
 
     auto convert_param = [&ctx](auto && clang_param) {
-        return convert_type(ctx, clang_param);
+        return get_or_create_type(ctx, clang_param);
     };
     auto converted_params = clang_params | std::ranges::views::transform(convert_param);
 
@@ -535,33 +488,88 @@ function_type * convert_function_type(conv_context & ctx,
 }
 
 
-record_type * convert_record_type(conv_context & ctx, const ::clang::RecordType * clang_rec_type) {
-    // looking for existing code model type for recrod declaration
-    if (auto rec = ctx.get_cm_entity_as<record_type>(clang_rec_type->getDecl())) {
-        return rec;
-    }
-
-    // creating new empty record for declaration
-    // NOTE: this case is supposed to be used only for some builtin implicit record declarations
-    // created by compiler such as __NSConstantString_tag
-
-    // // record declaration that does not exist must be in translation unit declaration context
-    // assert(clang_rec_type->getDecl()->getDeclContext()->getDeclKind() == ::clang::Decl::TranslationUnit &&
-    //        "not existing record declaration must be in translation unit decl context");
-
-    return create_new_record(ctx, clang_rec_type->getDecl());
+record_type * get_or_create_record_type(conv_context & ctx,
+                                        const ::clang::RecordType * clang_rec_type) {
+    return get_or_create_decl_entity_as<record_type>(ctx, clang_rec_type->getDecl());
 }
 
 
-dependent_type * convert_dependent_type(conv_context & ctx,
-                                        const ::clang::DependentNameType * clang_type) {
+dependent_type * get_or_create_dependent_type(conv_context & ctx,
+                                              const ::clang::DependentNameType * clang_type) {
     return ctx.decl_ctx()->create_entity<dependent_type>();
 }
 
 
-decltype_type * convert_decltype_type(conv_context & ctx,
-                                      const ::clang::DecltypeType * clang_type) {
+decltype_type * get_or_create_decltype_type(conv_context & ctx,
+                                            const ::clang::DecltypeType * clang_type) {
     return ctx.decl_ctx()->create_entity<decltype_type>();
+}
+
+
+typedef_type * get_or_create_typedef_type(conv_context & ctx,
+                                          const ::clang::TypedefType * clang_type) {
+    return get_or_create_decl_entity_as<typedef_type>(ctx, clang_type->getDecl());
+}
+
+
+qual_type get_or_create_type(conv_context & ctx, const ::clang::Type * type) {
+    if (auto clang_bt_type = ::clang::dyn_cast<::clang::BuiltinType>(type)) {
+        return get_or_create_builtin_type(ctx, clang_bt_type);
+    } else if (auto clang_ptr_type = ::clang::dyn_cast<::clang::PointerType>(type)) {
+        return get_or_create_pointer_type(ctx, clang_ptr_type);
+    } else if (auto clang_ref_type = ::clang::dyn_cast<::clang::LValueReferenceType>(type)) {
+        return get_or_create_lvalue_reference_type(ctx, clang_ref_type);
+    } else if (auto clang_ref_type = ::clang::dyn_cast<::clang::RValueReferenceType>(type)) {
+        return get_or_create_rvalue_reference_type(ctx, clang_ref_type);
+    } else if (auto clang_func_type = ::clang::dyn_cast<::clang::FunctionType>(type)) {
+        return get_or_create_function_type(ctx, clang_func_type);
+    } else if (auto clang_rec_type = ::clang::dyn_cast<::clang::RecordType>(type)) {
+        return get_or_create_record_type(ctx, clang_rec_type);
+    } else if (auto clang_arr_type = ::clang::dyn_cast<::clang::ConstantArrayType>(type)) {
+        return get_or_create_array_type(ctx, clang_arr_type);
+    } else if (auto clang_elab_type = ::clang::dyn_cast<::clang::ElaboratedType>(type)) {
+        return get_or_create_type(ctx, clang_elab_type->getNamedType()).type();
+    } else if (auto clang_td_type = ::clang::dyn_cast<::clang::TypedefType>(type)) {
+        return get_or_create_typedef_type(ctx, clang_td_type);
+    } else if (auto clang_tpar_type = ::clang::dyn_cast<::clang::TemplateTypeParmType>(type)) {
+        return get_or_create_type_template_param_type(ctx, clang_tpar_type);
+    } else if (auto tspec = ::clang::dyn_cast<::clang::TemplateSpecializationType>(type)) {
+        return get_or_create_template_spec_type(ctx, tspec);
+    } else if (auto subst_tpar = ::clang::dyn_cast<::clang::SubstTemplateTypeParmType>(type)) {
+        // TODO: do we need store this info in code model?
+        return get_or_create_type(ctx, subst_tpar->getReplacementType()).type();
+    } else if (auto dep_type = ::clang::dyn_cast<::clang::DependentNameType>(type)) {
+        return get_or_create_dependent_type(ctx, dep_type);
+    } else if (auto dt_type = ::clang::dyn_cast<::clang::DecltypeType>(type)) {
+        return get_or_create_decltype_type(ctx, dt_type);
+    } else if (auto p_type = ::clang::dyn_cast<::clang::ParenType>(type)) {
+        // ignoring parens in code model for now
+        return get_or_create_type(ctx, p_type->getInnerType());
+    } else {
+        CM_CLANG_LOG_ERROR << "don't know how to convert clang type:\n"
+                           << dump_type_to_string(type, ctx.clang_ctx());
+        assert(false && "Don't not know how to convert type");
+        return {};
+    }
+}
+
+
+/// Gets existing or creates new code model qual type for clang qual type.
+qual_type get_or_create_type(conv_context & ctx, const ::clang::QualType & clang_type) {
+    // converting base type
+    auto type = get_or_create_type(ctx, clang_type.getTypePtr());
+
+    // adding cv-qualifiers
+
+    if (clang_type.isLocalConstQualified()) {
+        type.set_const(true);
+    }
+
+    if (clang_type.isLocalVolatileQualified()) {
+        type.set_volatile(true);
+    }
+
+    return type;
 }
 
 
