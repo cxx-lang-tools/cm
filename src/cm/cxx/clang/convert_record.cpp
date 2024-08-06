@@ -54,8 +54,7 @@ access_level get_clang_decl_acc_level(const ::clang::Decl * decl) {
 record_type * create_new_record(conv_context & ctx,
                                 context * parent_ctx,
                                 const ::clang::RecordDecl * clang_rec_decl) {
-    CM_CLANG_LOG_DEBUG << "creating new record for clang decl: " << clang_rec_decl;
-    CM_CLANG_LOG_TRACE << "clang record decl dump:\n" << dump_decl_to_string(clang_rec_decl);
+    CM_CLANG_LOG_SCAT_DECL(decl, "creating new record for decl", clang_rec_decl);
 
     // getting record kind
     auto knd = clang_tag_kind_to_record_kind(clang_rec_decl->getTagKind());
@@ -148,8 +147,6 @@ void fill_record_contents(conv_context & ctx,
 
 
 record_type * convert_record(conv_context & ctx, const ::clang::RecordDecl * clang_record_decl) {
-    CM_CLANG_LOG_TRACE << "converting record:\n" << dump_decl_to_string(clang_record_decl);
-
     // getting existing or creating new record entity
     auto rec = get_or_create_decl_entity_as<record_type>(ctx, clang_record_decl);
 

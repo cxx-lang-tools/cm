@@ -45,10 +45,10 @@ void ast_converter::convert() {
     // setting translation unit as current decl context
     conv_context::decl_context_setter csetter{ctx_, &ctx_.mdl(), tu_decl};
 
-    CM_CLANG_LOG_TRACE << "converting translation unit:\n" << dump_decl_to_string(tu_decl);
+    CM_CLANG_LOG_DECL("converting translation unit", tu_decl);
 
     for (auto && decl : tu_decl->decls()) {
-        CM_CLANG_LOG_TRACE << "converting top level declaration:\n" << dump_decl_to_string(decl);
+        CM_CLANG_LOG_DECL("converting top level declaration", decl);
 
         // converting namespaces separately from other declarations
         if (auto ns = ::clang::dyn_cast<::clang::NamespaceDecl>(decl)) {

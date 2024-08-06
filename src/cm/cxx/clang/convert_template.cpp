@@ -343,8 +343,6 @@ template_function_instantiation *
 convert_template_function_inst(conv_context & ctx,
                                cm::template_function * templ,
                                const ::clang::FunctionDecl * clang_func) {
-    CM_CLANG_LOG_TRACE << "converting template function inst:\n" << dump_decl_to_string(clang_func);
-
     assert(clang_func->isTemplateInstantiation() && "function is not a template instantiation");
 
     // checking that there is no existing entity associated with template instantiation

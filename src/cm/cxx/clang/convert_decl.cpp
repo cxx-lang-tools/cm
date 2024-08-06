@@ -24,7 +24,7 @@ namespace cm::cxx::clang {
 
 /// Creates context entity for clang declaration
 static context_entity * create_decl_entity(conv_context & ctx, const ::clang::Decl * clang_decl) {
-    CM_CLANG_LOG_TRACE << "create context entity for:\n" << dump_decl_to_string(clang_decl);
+    CM_CLANG_LOG_SCAT_DECL(decl, "create code model entity for decl", clang_decl);
 
     // getting parent context
     auto clang_decl_ctx = clang_decl->getDeclContext();
@@ -76,8 +76,7 @@ static context_entity * create_decl_entity(conv_context & ctx, const ::clang::De
         assert(false && "should not reach here");
         return nullptr;
     } else {
-        CM_CLANG_LOG_ERROR << "unknown decl for creating entity:\n"
-                           << dump_decl_to_string(clang_decl);
+        CM_CLANG_LOG_SCAT_DECL_ERROR(decl, "unknown decl for creating entity", clang_decl);
         assert(false && "unknown decl");
         return nullptr;
     }
@@ -220,7 +219,7 @@ static void convert_linkage_spec(conv_context & ctx,
 
 
 void convert_decl(conv_context & ctx, const ::clang::Decl * clang_decl) {
-    CM_CLANG_LOG_TRACE << "converting decl:\n" << dump_decl_to_string(clang_decl);
+    CM_CLANG_LOG_SCAT_DECL(decl, "converting decl", clang_decl);
 
     if (auto * ns = ::clang::dyn_cast<::clang::NamespaceDecl>(clang_decl)) {
         // should not be namespace here

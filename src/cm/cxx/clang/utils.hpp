@@ -21,5 +21,8 @@ std::string dump_decl_to_string(const ::clang::Decl * decl);
 /// Dumps clang type to string
 std::string dump_type_to_string(const ::clang::Type * type, const ::clang::ASTContext & ctx);
 
+/// Returns clang declaration short description for logging
+std::string clang_decl_desc(const ::clang::Decl * decl);
+
 
 }
