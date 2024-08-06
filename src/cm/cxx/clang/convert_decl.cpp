@@ -106,7 +106,7 @@ static typedef_type * convert_typedef(conv_context & ctx,
 
     // getting or creating entity for base type
     auto clang_base_type = clang_typedef_decl->getUnderlyingType();
-    auto base_type = ctx.types().type(ctx, clang_base_type);
+    auto base_type = ctx.types().type(clang_base_type);
     td_type->set_base(base_type);
 
     // creating typedef type in namespace or record
@@ -170,7 +170,7 @@ static variable * convert_variable(conv_context & ctx, const ::clang::VarDecl * 
     }
 
     // converting variable type
-    auto var_type = ctx.types().type(ctx, clang_var_decl->getType());
+    auto var_type = ctx.types().type(clang_var_decl->getType());
 
     // creating new variable
     auto nm = clang_var_decl->getNameAsString();
@@ -255,14 +255,14 @@ void convert_function_ret_type_and_params(conv_context & ctx,
                                           function * func,
                                           const ::clang::FunctionDecl * clang_func) {
     // converting function return type
-    func->set_ret_type(ctx.types().type(ctx, clang_func->getReturnType()));
+    func->set_ret_type(ctx.types().type(clang_func->getReturnType()));
 
     // converting function parameters
     for (auto && par : clang_func->parameters()) {
         if (!par->getName().empty()) {
-            func->add_param(par->getNameAsString(), ctx.types().type(ctx, par->getType()));
+            func->add_param(par->getNameAsString(), ctx.types().type(par->getType()));
         } else {
-            func->add_param(ctx.types().type(ctx, par->getType()));
+            func->add_param(ctx.types().type(par->getType()));
         }
     }
 }

@@ -79,7 +79,7 @@ void convert_template_params(conv_context & ctx,
         if (auto clang_type_par = ::clang::dyn_cast<::clang::TemplateTypeParmDecl>(par)) {
             cm_par = templ->add_type_template_param(par_name);
         } else if (auto clang_val_par = ::clang::dyn_cast<::clang::NonTypeTemplateParmDecl>(par)) {
-            auto par_type = ctx.types().type(ctx, clang_val_par->getType());
+            auto par_type = ctx.types().type(clang_val_par->getType());
             cm_par = templ->add_value_template_param(par_name, par_type.type());
         } else if (auto clang_templ_par = ::clang::dyn_cast<::clang::TemplateTemplateParmDecl>(par)) {
             // TODO: implement template template parameters
@@ -115,7 +115,7 @@ convert_template_arguments(conv_context & ctx,
 
         switch (targ.getKind()) {
         case ::clang::TemplateArgument::ArgKind::Type: {
-            res.push_back(ctx.types().type(ctx, targ.getAsType()));
+            res.push_back(ctx.types().type(targ.getAsType()));
             break;
         }
         case ::clang::TemplateArgument::ArgKind::Integral: {
