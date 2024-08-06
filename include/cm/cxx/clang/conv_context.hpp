@@ -9,6 +9,7 @@
 
 #pragma once
 
+#include "decl_map.hpp"
 #include "../../cm.hpp"
 #include <clang/AST/ASTContext.h>
 
@@ -113,51 +114,30 @@ public:
     /// Sets pointer to current clang declaration context
     void set_clang_decl_ctx(const ::clang::DeclContext * c) { clang_decl_ctx_ = c; }
 
+    /// Returns reference to declarations map
+    auto & decls() { return decls_; }
+
+    /// Returns const reference to declarations map
+    const auto & decls() const { return decls_; }
+
     /// Finds code model entity associated with clang declaration.
     /// First gets canonical declaration of clang declaration.
     /// Returns nullptr if associated context_entity not found
-    context_entity * get_cm_entity(const ::clang::Decl * clang_decl) {
-        auto canon_decl = clang_decl->getCanonicalDecl();
-
-        auto it = decls_.find(canon_decl);
-        if (it == decls_.end()) {
-            return nullptr;
-        }
-
-        return it->second;
+    context_entity * get_cm_entity(const ::clang::Decl * clang_decl) const {
+        return decls_.get(clang_decl);
     }
 
     /// Finds code model enitty associated with clang declaration and converts it to
     /// specified type. Found context_entity must be convertible to specified type.
     /// Returns nullptr if context_entity is not found.
     template <typename Entity>
-    Entity * get_cm_entity_as(const ::clang::Decl * clang_decl) {
-        auto ent = get_cm_entity(clang_decl);
-        if (!ent) {
-            return nullptr;
-        }
-
-        auto casted_ent = dynamic_cast<Entity*>(ent);
-        assert(casted_ent && "existing context_entity type mismatch");
-        return casted_ent;
+    Entity * get_cm_entity_as(const ::clang::Decl * clang_decl) const {
+        return decls_.get_as<Entity>(clang_decl);
     }
-
-    // /// Finds existing code model entity associated with clang declaration or creates
-    // /// a new one. Found entity must be convertible to specified type.
-    // template <std::derived_from<context_entity> Entity>
-    // Entity * get_or_create_entity(const ::clang::Decl * clang_decl) {
-    //     auto ent = get_cm_entity(clang_decl);
-    //     if (!ent) {
-    //         //auto res = std::make
-    //     }
-    // }
 
     /// Adds code model context entity associated with clang declaration.
     void add_cm_entity(const ::clang::Decl * clang_decl, context_entity * cm_ent) {
-        auto canon_decl = clang_decl->getCanonicalDecl();
-        auto [it, inserted] = decls_.emplace(canon_decl, cm_ent);
-        assert(inserted &&
-               "code model context_entity is already associated with clang declaration");
+        decls_.add(clang_decl, cm_ent);
     }
 
 public:
@@ -165,9 +145,7 @@ public:
     const ::clang::ASTContext & clang_ctx_;                 ///< Reference to Clang AST context
     context * decl_ctx_ = nullptr;                          ///< Current code model context
     const ::clang::DeclContext * clang_decl_ctx_ = nullptr; ///< Current clang decl context
-
-    /// Map from clang canonical declarations to code model entities
-    std::map<const ::clang::Decl *, context_entity *> decls_;
+    decl_map decls_;                                        ///< Declarations map
 };
 
 

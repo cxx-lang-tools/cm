@@ -16,6 +16,7 @@ add_library(cm-cxx-clang
             convert_template.hpp
             convert_type.cpp
             convert_type.hpp
+            decl_map.cpp
             import.hpp
             pch.hpp
             utils.cpp
