@@ -7,11 +7,12 @@
 /// \file convert_template.cpp
 /// Contains implementations of functions for converting clang templates.
 
+#include "pch.hpp"
+
 #include "convert_template.hpp"
 #include "convert_decl.hpp"
 #include "convert_loc.hpp"
 #include "convert_record.hpp"
-#include "convert_type.hpp"
 #include "log.hpp"
 #include "utils.hpp"
 
@@ -78,7 +79,7 @@ void convert_template_params(conv_context & ctx,
         if (auto clang_type_par = ::clang::dyn_cast<::clang::TemplateTypeParmDecl>(par)) {
             cm_par = templ->add_type_template_param(par_name);
         } else if (auto clang_val_par = ::clang::dyn_cast<::clang::NonTypeTemplateParmDecl>(par)) {
-            auto par_type = get_or_create_type(ctx, clang_val_par->getType());
+            auto par_type = ctx.types().type(ctx, clang_val_par->getType());
             cm_par = templ->add_value_template_param(par_name, par_type.type());
         } else if (auto clang_templ_par = ::clang::dyn_cast<::clang::TemplateTemplateParmDecl>(par)) {
             // TODO: implement template template parameters
@@ -88,7 +89,7 @@ void convert_template_params(conv_context & ctx,
         // } else if (auto clang_obj_par = ::clang::dyn_cast<::clang::TemplateParamObjectDecl>(par)) {
         //     // TODO: check if we need something special for template object parameters other
         //     // than name and type
-        //     auto par_type = get_or_create_type(clang_val_par->getType());
+        //     auto par_type = type(clang_val_par->getType());
         //     rec->add_value_template_param(par_name, par_type.type());
 
         } else {
@@ -114,7 +115,7 @@ convert_template_arguments(conv_context & ctx,
 
         switch (targ.getKind()) {
         case ::clang::TemplateArgument::ArgKind::Type: {
-            res.push_back(get_or_create_type(ctx, targ.getAsType()));
+            res.push_back(ctx.types().type(ctx, targ.getAsType()));
             break;
         }
         case ::clang::TemplateArgument::ArgKind::Integral: {

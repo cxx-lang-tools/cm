@@ -10,6 +10,7 @@
 #pragma once
 
 #include "decl_map.hpp"
+#include "type_converter.hpp"
 #include "../../cm.hpp"
 #include <clang/AST/ASTContext.h>
 
@@ -89,7 +90,7 @@ public:
 
     /// Constructs converter context
     explicit conv_context(code_model & mdl, const ::clang::ASTContext & clang_ctx):
-        mdl_{mdl}, clang_ctx_{clang_ctx} {}
+        mdl_{mdl}, clang_ctx_{clang_ctx}, types_{decls_, *this} {}
 
     conv_context(const conv_context &) = delete;
     conv_context(conv_context &&) = delete;
@@ -140,12 +141,19 @@ public:
         decls_.add(clang_decl, cm_ent);
     }
 
+    /// Returns reference to type converter
+    auto & types() { return types_; }
+
+    /// Returns const reference to type converter
+    const auto & types() const { return types_; }
+
 public:
     code_model & mdl_;                                      ///< Reference to code model
     const ::clang::ASTContext & clang_ctx_;                 ///< Reference to Clang AST context
     context * decl_ctx_ = nullptr;                          ///< Current code model context
     const ::clang::DeclContext * clang_decl_ctx_ = nullptr; ///< Current clang decl context
     decl_map decls_;                                        ///< Declarations map
+    type_converter types_;                                  ///< Type converter
 };
 
 

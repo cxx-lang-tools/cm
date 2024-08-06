@@ -7,6 +7,8 @@
 /// \file cmclang.cpp
 /// Contains implementation of functions for parsing code models from source files.
 
+#include "pch.hpp"
+
 #include "cm/cxx/clang/cmclang.hpp"
 #include "cm/cxx/clang/ast_converter.hpp"
 #include <clang-c/Index.h>

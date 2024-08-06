@@ -7,6 +7,8 @@
 /// \file utils.cpp
 /// Contains implementations of utility functions fo clang to code model converter.
 
+#include "pch.hpp"
+
 #include "utils.hpp"
 #include <sstream>
 

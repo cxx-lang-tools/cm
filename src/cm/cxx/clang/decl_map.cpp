@@ -7,6 +7,8 @@
 /// \file decl_map.cpp
 /// Contains implementation of the decl_map class.
 
+#include "pch.hpp"
+
 #include "cm/cxx/clang/decl_map.hpp"
 
 

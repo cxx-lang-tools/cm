@@ -14,11 +14,10 @@ add_library(cm-cxx-clang
             convert_record.hpp
             convert_template.cpp
             convert_template.hpp
-            convert_type.cpp
-            convert_type.hpp
             decl_map.cpp
             import.hpp
             pch.hpp
+            type_converter.cpp
             utils.cpp
             utils.hpp
            )

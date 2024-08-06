@@ -7,6 +7,8 @@
 /// \file convert_loc.cpp
 /// Contains implementations of functions for converting clang source locations.
 
+#include "pch.hpp"
+
 #include "convert_loc.hpp"
 #include <clang/Basic/SourceManager.h>
 

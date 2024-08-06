@@ -8,6 +8,7 @@
 /// Contains code for the cmclangdump utility for parsing and dumping code model.
 
 #include "pch.hpp"
+
 #include "cm/cxx/clang/cmclang.hpp"
 #include "cm/log/log_init.hpp"
 #include <fstream>

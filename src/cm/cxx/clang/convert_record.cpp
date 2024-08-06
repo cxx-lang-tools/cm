@@ -4,10 +4,14 @@
 // See accompanying file LICENSE for license information.
 //
 
+/// \file convert_record.hpp
+/// Contains implementations of functions for converting clang records to code model records.
+
+#include "pch.hpp"
+
 #include "convert_record.hpp"
 #include "convert_decl.hpp"
 #include "convert_loc.hpp"
-#include "convert_type.hpp"
 #include "log.hpp"
 #include "utils.hpp"
 
@@ -91,7 +95,7 @@ static field * convert_field(conv_context & ctx,
     }
 
     // converting variable type
-    auto var_type = get_or_create_type(ctx, clang_field_decl->getType());
+    auto var_type = ctx.types().type(ctx, clang_field_decl->getType());
 
     // creating new variable
     auto nm = clang_field_decl->getNameAsString();
@@ -119,7 +123,7 @@ void fill_record_contents(conv_context & ctx,
     if (auto clang_cxx_record_decl = ::clang::dyn_cast<::clang::CXXRecordDecl>(clang_record_decl)) {
         for (auto && base : clang_cxx_record_decl->bases()) {
             auto clang_base_type = base.getType().getTypePtr();
-            auto base_type = get_or_create_type(ctx, ::clang::QualType{clang_base_type, 0});
+            auto base_type = ctx.types().type(ctx, ::clang::QualType{clang_base_type, 0});
             rec->add_base(base_type.type());
         }
     }

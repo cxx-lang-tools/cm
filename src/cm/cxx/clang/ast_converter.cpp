@@ -7,6 +7,8 @@
 /// \file ast_converter.cpp
 /// Contains implementation of the ast_converter class.
 
+#include "pch.hpp"
+
 #include "cm/cxx/clang/ast_converter.hpp"
 
 #include "utils.hpp"
@@ -14,7 +16,6 @@
 #include "convert_loc.hpp"
 #include "convert_record.hpp"
 #include "convert_template.hpp"
-#include "convert_type.hpp"
 
 #include "cm/namespace.hpp"
 #include "cm/record_kind.hpp"
@@ -61,67 +62,67 @@ void ast_converter::convert() {
 
 
 qual_type ast_converter::convert_type(const ::clang::QualType & clang_qual_type) {
-    return clang::get_or_create_type(ctx_, clang_qual_type);
+    return ctx_.types().type(ctx_, clang_qual_type);
 }
 
 
 type_t * ast_converter::convert_builtin_type(const ::clang::BuiltinType * clang_bt_type) {
-    return clang::get_or_create_builtin_type(ctx_, clang_bt_type);
+    return ctx_.types().builtin(ctx_, clang_bt_type);
 }
 
 
 pointer_type * ast_converter::convert_pointer_type(const ::clang::PointerType * clang_ptr_type) {
-    return clang::get_or_create_pointer_type(ctx_, clang_ptr_type);
+    return ctx_.types().pointer(ctx_, clang_ptr_type);
 }
 
 
 lvalue_reference_type *
 ast_converter::convert_lvalue_reference_type(const ::clang::LValueReferenceType * clang_ref_type) {
-    return clang::get_or_create_lvalue_reference_type(ctx_, clang_ref_type);
+    return ctx_.types().lvalue_reference(ctx_, clang_ref_type);
 }
 
 
 rvalue_reference_type *
 ast_converter::convert_rvalue_reference_type(const ::clang::RValueReferenceType * clang_ref_type) {
-    return clang::get_or_create_rvalue_reference_type(ctx_, clang_ref_type);
+    return ctx_.types().rvalue_reference(ctx_, clang_ref_type);
 }
 
 
 array_type * ast_converter::convert_array_type(const ::clang::ConstantArrayType * clang_arr_type) {
-    return clang::get_or_create_array_type(ctx_, clang_arr_type);
+    return ctx_.types().array(ctx_, clang_arr_type);
 }
 
 
 type_template_parameter * ast_converter::convert_type_template_param_type(
         const ::clang::TemplateTypeParmType * type) {
 
-    return clang::get_or_create_type_template_param_type(ctx_, type);
+    return ctx_.types().template_parameter(ctx_, type);
 }
 
 
 type_t *
 ast_converter::convert_template_spec_type(const ::clang::TemplateSpecializationType * type) {
-    return clang::get_or_create_template_spec_type(ctx_, type);
+    return ctx_.types().template_spec(ctx_, type);
 }
 
 
 function_type * ast_converter::convert_function_type(const ::clang::FunctionType * type) {
-    return clang::get_or_create_function_type(ctx_, type);
+    return ctx_.types().function(ctx_, type);
 }
 
 
 record_type * ast_converter::convert_record_type(const ::clang::RecordType * type) {
-    return clang::get_or_create_record_type(ctx_, type);
+    return ctx_.types().record(ctx_, type);
 }
 
 
 dependent_type * ast_converter::convert_dependent_type(const ::clang::DependentNameType * type) {
-    return clang::get_or_create_dependent_type(ctx_, type);
+    return ctx_.types().dependent(ctx_, type);
 }
 
 
 decltype_type * ast_converter::convert_decltype_type(const ::clang::DecltypeType * type) {
-    return clang::get_or_create_decltype_type(ctx_, type);
+    return ctx_.types().decltype_(ctx_, type);
 }
 
 
