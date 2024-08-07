@@ -506,7 +506,50 @@ typedef_type * type_converter::typedef_(const ::clang::TypedefType * clang_type)
 }
 
 
-qual_type type_converter::type(const ::clang::Type * type) {
+qual_type type_converter::type(const ::clang::Type * clang_tp) {
+
+    // special case for paren type
+    if (auto p_type = ::clang::dyn_cast<::clang::ParenType>(clang_tp)) {
+        // ignoring parens in code model for now
+        return this->type(p_type->getInnerType());
+    }
+
+    // searching for existing code model type associated with clang type
+    if (auto it = types_.find(clang_tp); it != types_.end()) {
+        assert(it->second != nullptr && "null code model type assoicated with clang type");
+        return it->second;
+    }
+
+    // creating new type
+    auto tp = create(clang_tp);
+
+    // adding created type to map of types
+    types_.emplace(clang_tp, tp);
+
+    return tp;
+}
+
+
+/// Gets existing or creates new code model qual type for clang qual type.
+qual_type type_converter::type(const ::clang::QualType & clang_type) {
+    // converting base type
+    auto type = this->type(clang_type.getTypePtr());
+
+    // adding cv-qualifiers
+
+    if (clang_type.isLocalConstQualified()) {
+        type.set_const(true);
+    }
+
+    if (clang_type.isLocalVolatileQualified()) {
+        type.set_volatile(true);
+    }
+
+    return type;
+}
+
+
+type_t * type_converter::create(const ::clang::Type * type) {
     if (auto clang_bt_type = ::clang::dyn_cast<::clang::BuiltinType>(type)) {
         return builtin(clang_bt_type);
     } else if (auto clang_ptr_type = ::clang::dyn_cast<::clang::PointerType>(type)) {
@@ -536,34 +579,12 @@ qual_type type_converter::type(const ::clang::Type * type) {
         return dependent(dep_type);
     } else if (auto dt_type = ::clang::dyn_cast<::clang::DecltypeType>(type)) {
         return decltype_(dt_type);
-    } else if (auto p_type = ::clang::dyn_cast<::clang::ParenType>(type)) {
-        // ignoring parens in code model for now
-        return this->type(p_type->getInnerType());
     } else {
-        CM_CLANG_LOG_ERROR << "don't know how to convert clang type:\n"
+        CM_CLANG_LOG_ERROR << "don't know how to create code model type for clang type:\n"
                            << dump_type_to_string(type, ctx_.clang_ctx());
         assert(false && "Don't not know how to convert type");
         return {};
     }
-}
-
-
-/// Gets existing or creates new code model qual type for clang qual type.
-qual_type type_converter::type(const ::clang::QualType & clang_type) {
-    // converting base type
-    auto type = this->type(clang_type.getTypePtr());
-
-    // adding cv-qualifiers
-
-    if (clang_type.isLocalConstQualified()) {
-        type.set_const(true);
-    }
-
-    if (clang_type.isLocalVolatileQualified()) {
-        type.set_volatile(true);
-    }
-
-    return type;
 }
 
 

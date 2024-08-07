@@ -258,7 +258,7 @@ template_record_partial_specialization * convert_template_partial_specialization
         convert_template_params(ctx, spec, clang_decl->getTemplateParameters());
 
         // adding clang decl -> specialization association before converting template
-        // arguments because they can depend on temple context
+        // arguments because they can depend on template context
         ctx.add_cm_entity(clang_decl, spec);
 
         // setting current context before converting template arguments

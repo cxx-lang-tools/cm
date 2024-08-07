@@ -71,9 +71,17 @@ public:
     /// Gets existing or creates new code model qual type for clang qual type.
     qual_type type(const ::clang::QualType & clang_type);
 
+
 private:
+    /// Creates code model type for clang type
+    type_t * create(const ::clang::Type * clang_type);
+
+
     decl_map & decls_;          ///< Declarations map
     conv_context & ctx_;        ///< Current conversion context
+
+    /// Map from clang types for code model types
+    std::map<const ::clang::Type *, type_t *> types_;
 };
 
 
