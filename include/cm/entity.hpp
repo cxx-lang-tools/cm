@@ -137,6 +137,11 @@ public:
         str << std::endl;
     }
 
+    /// Dumps entity to stdout with no indent and default options. Used for debugging.
+    void __attribute__((__used__)) dump() const {
+        dump(std::cout, {}, 0);
+    }
+
     /// Dumps entity to string
     std::string dump_to_string(const dump_options & opts = {}, unsigned int indent = 0) const {
         std::ostringstream str;

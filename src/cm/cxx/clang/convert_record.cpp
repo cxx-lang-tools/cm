@@ -10,7 +10,6 @@
 #include "pch.hpp"
 
 #include "convert_record.hpp"
-#include "convert_decl.hpp"
 #include "convert_loc.hpp"
 #include "log.hpp"
 #include "utils.hpp"
@@ -55,7 +54,7 @@ access_level get_clang_decl_acc_level(const ::clang::Decl * decl) {
 }
 
 
-record_type * create_new_record(conv_context & ctx,
+record_type * create_new_record(converter_impl & conv,
                                 context * parent_ctx,
                                 const ::clang::RecordDecl * clang_rec_decl) {
     CM_CLANG_LOG_SCAT_DECL(decl, "creating new record for decl", clang_rec_decl);
@@ -78,36 +77,36 @@ record_type * create_new_record(conv_context & ctx,
     if (!clang_def_rec) {
         clang_def_rec = clang_rec_decl->getCanonicalDecl();
     }
-    rec->set_loc(convert_loc(ctx, clang_def_rec->getSourceRange().getBegin()));
+    rec->set_loc(convert_loc(conv, clang_def_rec->getSourceRange().getBegin()));
 
     return rec;
 }
 
 
-static field * convert_field(conv_context & ctx,
+static field * convert_field(converter_impl & conv,
                              cm::record * rec,
                              const ::clang::FieldDecl * clang_field_decl) {
     // looking for existing variable for declaration
-    auto var = ctx.get_cm_entity_as<field>(clang_field_decl);
+    auto var = conv.get_decl_entity_as<field>(clang_field_decl);
     if (var != nullptr) {
         // TODO: check equality of existing variable type
         return var;
     }
 
     // converting variable type
-    auto var_type = ctx.types().type(clang_field_decl->getType());
+    auto var_type = conv.types().type(clang_field_decl->getType());
 
     // creating new variable
     auto nm = clang_field_decl->getNameAsString();
     auto acc = get_clang_decl_acc_level(clang_field_decl);
     var = rec->create_field(nm, var_type, acc);
-    var->set_loc(convert_loc(ctx, clang_field_decl->getCanonicalDecl()->getLocation()));
-    ctx.add_cm_entity(clang_field_decl, var);
+    var->set_loc(convert_loc(conv, clang_field_decl->getCanonicalDecl()->getLocation()));
+    conv.add_decl_entity(clang_field_decl, var);
     return var;
 }
 
 
-void fill_record_contents(conv_context & ctx,
+void fill_record_contents(converter_impl & conv,
                           cm::record * rec,
                           const ::clang::RecordDecl * clang_record_decl) {
 
@@ -117,13 +116,13 @@ void fill_record_contents(conv_context & ctx,
     }
 
     // setting current declaration context
-    conv_context::decl_context_setter csetter{ctx, rec, clang_record_decl};
+    converter_impl::decl_context_setter csetter{conv, rec, clang_record_decl};
 
     // adding record bases
     if (auto clang_cxx_record_decl = ::clang::dyn_cast<::clang::CXXRecordDecl>(clang_record_decl)) {
         for (auto && base : clang_cxx_record_decl->bases()) {
             auto clang_base_type = base.getType().getTypePtr();
-            auto base_type = ctx.types().type(clang_base_type);
+            auto base_type = conv.types().type(clang_base_type);
             rec->add_base(base_type.type());
         }
     }
@@ -141,22 +140,22 @@ void fill_record_contents(conv_context & ctx,
             // doing nothing for access levels
         } else if (auto fld_decl = ::clang::dyn_cast<::clang::FieldDecl>(decl)) {
             // field
-            convert_field(ctx, rec, fld_decl);
+            convert_field(conv, rec, fld_decl);
         } else {
             // other declaration are converted via standard convert_decl
-            convert_decl(ctx, decl);
+            conv.convert_decl(decl);
         }
     }
 }
 
 
-record_type * convert_record(conv_context & ctx, const ::clang::RecordDecl * clang_record_decl) {
+record_type * convert_record(converter_impl & conv, const ::clang::RecordDecl * clang_record_decl) {
     // getting existing or creating new record entity
-    auto rec = get_or_create_decl_entity_as<record_type>(ctx, clang_record_decl);
+    auto rec = conv.decl_entity_as<record_type>(clang_record_decl);
 
     // filling record contents
     assert(rec && "record type should not be null here");
-    fill_record_contents(ctx, rec, clang_record_decl);
+    fill_record_contents(conv, rec, clang_record_decl);
     return rec;
 }
 

@@ -17,15 +17,15 @@
 namespace cm::cxx::clang {
 
 
-class conv_context;
+class converter_impl;
 
 
 /// Clang type converter. Maps clang types to code model types.
 class type_converter {
 public:
     /// Constructs type converter
-    explicit type_converter(decl_map & decls, conv_context & ctx):
-        decls_{decls}, ctx_{ctx} {}
+    explicit type_converter(decl_map & decls, converter_impl & conv):
+        decls_{decls}, conv_{conv} {}
 
     /// Gets existing or creates new code model type for clang builtin type.
     /// NOTE: return type is not always code model builting type in case of objc types.
@@ -78,7 +78,7 @@ private:
 
 
     decl_map & decls_;          ///< Declarations map
-    conv_context & ctx_;        ///< Current conversion context
+    converter_impl & conv_;     ///< Reference to converter
 
     /// Map from clang types for code model types
     std::map<const ::clang::Type *, type_t *> types_;

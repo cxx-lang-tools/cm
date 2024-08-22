@@ -9,7 +9,7 @@
 
 #pragma once
 
-#include "../../cm.hpp"
+#include "cm/cm.hpp"
 #include <clang/AST/Decl.h>
 #include <map>
 

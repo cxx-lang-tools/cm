@@ -16,13 +16,13 @@
 namespace cm::cxx::clang {
 
 
-source_location convert_loc(const conv_context & ctx, const ::clang::SourceLocation & loc) {
-    auto ploc = ctx.clang_ctx().getSourceManager().getPresumedLoc(loc);
+source_location convert_loc(const converter_impl & conv, const ::clang::SourceLocation & loc) {
+    auto ploc = conv.clang_ctx().getSourceManager().getPresumedLoc(loc);
     if (!ploc.isValid()) {
         return {};
     }
 
-    auto file = ctx.mdl().source(ploc.getFilename());
+    auto file = conv.mdl().source(ploc.getFilename());
     return source_location{file, ploc.getLine(), ploc.getColumn()};
 }
 

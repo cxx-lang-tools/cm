@@ -9,14 +9,14 @@
 
 #pragma once
 
-#include "cm/cxx/clang/conv_context.hpp"
+#include "converter_impl.hpp"
 
 
 namespace cm::cxx::clang {
 
 
 /// Converts source location
-source_location convert_loc(const conv_context & ctx, const ::clang::SourceLocation & loc);
+source_location convert_loc(const converter_impl & conv, const ::clang::SourceLocation & loc);
 
 
 }

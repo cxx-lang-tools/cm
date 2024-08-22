@@ -10,7 +10,7 @@
 #include "pch.hpp"
 
 #include "convert_template.hpp"
-#include "convert_decl.hpp"
+#include "convert_function.hpp"
 #include "convert_loc.hpp"
 #include "convert_record.hpp"
 #include "log.hpp"
@@ -23,7 +23,7 @@ namespace cm::cxx::clang {
 
 
 /// Updates template parameters locations and names to match parameters from the list
-static void update_template_params(conv_context & ctx,
+static void update_template_params(converter_impl & conv,
                                    templated_entity * templ,
                                    const ::clang::TemplateParameterList * clang_params) {
     auto templ_params = templ->template_params();
@@ -35,7 +35,7 @@ static void update_template_params(conv_context & ctx,
         auto par = *par_it;
 
         par->ctx()->rename_entity(par, clang_par->getName());
-        par->set_loc(convert_loc(ctx, clang_par->getLocation()));
+        par->set_loc(convert_loc(conv, clang_par->getLocation()));
 
         ++par_it;
     }
@@ -43,7 +43,7 @@ static void update_template_params(conv_context & ctx,
 
 
 /// Updates function parameter names and locations to match marapeters from clang declaration
-void update_function_params(conv_context & ctx,
+void update_function_params(converter_impl & conv,
                             function * func,
                             const ::clang::FunctionDecl * clang_func) {
     auto params = func->params();
@@ -66,7 +66,7 @@ void update_function_params(conv_context & ctx,
 }
 
 
-void convert_template_params(conv_context & ctx,
+void convert_template_params(converter_impl & conv,
                              templated_entity * templ,
                              const ::clang::TemplateParameterList * clang_params) {
 
@@ -79,7 +79,7 @@ void convert_template_params(conv_context & ctx,
         if (auto clang_type_par = ::clang::dyn_cast<::clang::TemplateTypeParmDecl>(par)) {
             cm_par = templ->add_type_template_param(par_name);
         } else if (auto clang_val_par = ::clang::dyn_cast<::clang::NonTypeTemplateParmDecl>(par)) {
-            auto par_type = ctx.types().type(clang_val_par->getType());
+            auto par_type = conv.types().type(clang_val_par->getType());
             cm_par = templ->add_value_template_param(par_name, par_type.type());
         } else if (auto clang_templ_par = ::clang::dyn_cast<::clang::TemplateTemplateParmDecl>(par)) {
             // TODO: implement template template parameters
@@ -96,16 +96,16 @@ void convert_template_params(conv_context & ctx,
             assert(false && "Unknown template parameter type");
         }
 
-        cm_par->set_loc(convert_loc(ctx, par->getLocation()));
+        cm_par->set_loc(convert_loc(conv, par->getLocation()));
 
         // ading entity map for template parameter
-        ctx.add_cm_entity(par, cm_par);
+        conv.add_decl_entity(par, cm_par);
     }
 }
 
 
 template_argument_desc_vector
-convert_template_arguments(conv_context & ctx,
+convert_template_arguments(converter_impl & conv,
                            const ::clang::ArrayRef<::clang::TemplateArgument> & args) {
 
     // converting template arguments
@@ -115,7 +115,7 @@ convert_template_arguments(conv_context & ctx,
 
         switch (targ.getKind()) {
         case ::clang::TemplateArgument::ArgKind::Type: {
-            res.push_back(ctx.types().type(targ.getAsType()));
+            res.push_back(conv.types().type(targ.getAsType()));
             break;
         }
         case ::clang::TemplateArgument::ArgKind::Integral: {
@@ -133,16 +133,16 @@ convert_template_arguments(conv_context & ctx,
 }
 
 
-template_record * convert_template_class(conv_context & ctx,
+template_record * convert_template_class(converter_impl & conv,
                                          const ::clang::ClassTemplateDecl * clang_templ_decl) {
 
     auto clang_rec_decl = clang_templ_decl->getTemplatedDecl();
 
     // setter for setting current contexts
-    conv_context::decl_context_setter csetter{ctx};
+    converter_impl::decl_context_setter csetter{conv};
 
     // looking for existing CM declaration associated with clang template declaration
-    auto rec = ctx.get_cm_entity_as<template_record>(clang_rec_decl);
+    auto rec = conv.get_decl_entity_as<template_record>(clang_rec_decl);
     if (rec != nullptr) {
         csetter.set(rec, clang_rec_decl);
     } else {
@@ -157,30 +157,30 @@ template_record * convert_template_class(conv_context & ctx,
 
         // creating new template record
         auto knd = clang_tag_kind_to_record_kind(clang_rec_decl->getTagKind());
-        auto trec = ctx.decl_ctx()->create_template_record(clang_rec_decl->getNameAsString(), knd);
-        trec->set_loc(convert_loc(ctx, clang_rec_def->getLocation()));
+        auto trec = conv.decl_ctx()->create_template_record(clang_rec_decl->getNameAsString(), knd);
+        trec->set_loc(convert_loc(conv, clang_rec_def->getLocation()));
         trec->this_type()->set_loc(trec->loc());
         rec = trec;
 
         // adding clang decl -> record_type association
-        ctx.add_cm_entity(clang_rec_decl, rec);
+        conv.add_decl_entity(clang_rec_decl, rec);
 
         // setting new context before converting tempalte parameters
         csetter.set(rec, clang_rec_decl);
 
         // converting template parameters
         auto clang_templ_pars = clang_templ_def->getTemplateParameters();
-        convert_template_params(ctx, rec, clang_templ_pars);
+        convert_template_params(conv, rec, clang_templ_pars);
     }
 
     // filling template record contents
-    fill_record_contents(ctx, rec, clang_rec_decl);
+    fill_record_contents(conv, rec, clang_rec_decl);
 
     // converting template specializations only for canonical decl
     // (canonical decl is only one in all translation unit)
     if (clang_templ_decl->isCanonicalDecl()) {
         for (auto && spec : clang_templ_decl->specializations()) {
-            convert_template_class_spec(ctx, rec, spec);
+            convert_template_class_spec(conv, rec, spec);
         }
     }
 
@@ -189,12 +189,12 @@ template_record * convert_template_class(conv_context & ctx,
 
 
 record *
-convert_template_class_spec(conv_context & ctx,
+convert_template_class_spec(converter_impl & conv,
                             cm::template_record * templ,
                             const ::clang::ClassTemplateSpecializationDecl * clang_spec_decl) {
 
     // looking for existing CM declaration associated with clang declaration
-    record * rec = ctx.get_cm_entity_as<template_record_instantiation_type>(clang_spec_decl);
+    record * rec = conv.get_decl_entity_as<template_record_instantiation_type>(clang_spec_decl);
     if (rec == nullptr) {
         auto knd = clang_tag_kind_to_record_kind(clang_spec_decl->getTagKind());
         auto clang_args = clang_spec_decl->getTemplateArgs().asArray();
@@ -204,29 +204,29 @@ convert_template_class_spec(conv_context & ctx,
                 clang_spec_decl)) {
             assert(false && "should not reach here");
         } else if (clang_spec_decl->isExplicitSpecialization()) {
-            auto args = convert_template_arguments(ctx, clang_args);
+            auto args = convert_template_arguments(conv, clang_args);
             rec = templ->create_specialization(args);
         } else {
-            auto args = convert_template_arguments(ctx, clang_args);
+            auto args = convert_template_arguments(conv, clang_args);
             rec = templ->create_instantiation(args);
         }
 
         auto templ = clang_spec_decl->getSpecializedTemplate();
-        rec->set_loc(convert_loc(ctx, templ->getLocation()));
+        rec->set_loc(convert_loc(conv, templ->getLocation()));
 
-        ctx.add_cm_entity(clang_spec_decl, rec);
+        conv.add_decl_entity(clang_spec_decl, rec);
     }
 
     // filling record content
     assert(rec && "record type should not be null here");
-    fill_record_contents(ctx, rec, clang_spec_decl);
+    fill_record_contents(conv, rec, clang_spec_decl);
 
     return rec;
 }
 
 
 template_record_partial_specialization * convert_template_partial_specialization(
-        conv_context & ctx,
+        converter_impl & conv,
         const ::clang::ClassTemplatePartialSpecializationDecl * clang_decl) {
 
     // skipping declaration without definition
@@ -235,10 +235,10 @@ template_record_partial_specialization * convert_template_partial_specialization
     }
 
     // context setter for template specialization
-    conv_context::decl_context_setter csetter{ctx};
+    converter_impl::decl_context_setter csetter{conv};
 
     // looking for existing CM entity associated with clang declaration
-    auto spec = ctx.get_cm_entity_as<template_record_partial_specialization>(clang_decl);
+    auto spec = conv.get_decl_entity_as<template_record_partial_specialization>(clang_decl);
     if (spec != nullptr) {
         // setting current decl context to existing CM entity
         csetter.set(spec, clang_decl);
@@ -248,51 +248,51 @@ template_record_partial_specialization * convert_template_partial_specialization
         // getting code model tempalte record entity
         auto clang_templ_decl = clang_decl->getSpecializedTemplate()->getTemplatedDecl();
         assert(clang_templ_decl && "can't get clang template record decl for specialization");
-        auto templ = ctx.get_cm_entity_as<template_record>(clang_templ_decl);
+        auto templ = conv.get_decl_entity_as<template_record>(clang_templ_decl);
         assert(templ && "can't find template record for partial template specialization");
 
         // creating new template specialization record
         spec = templ->create_partial_specialization();
 
         // converting template parameters
-        convert_template_params(ctx, spec, clang_decl->getTemplateParameters());
+        convert_template_params(conv, spec, clang_decl->getTemplateParameters());
 
         // adding clang decl -> specialization association before converting template
         // arguments because they can depend on template context
-        ctx.add_cm_entity(clang_decl, spec);
+        conv.add_decl_entity(clang_decl, spec);
 
         // setting current context before converting template arguments
         csetter.set(spec, clang_decl);
 
         // converting template arguments
-        auto args = convert_template_arguments(ctx, clang_decl->getTemplateArgs().asArray());
+        auto args = convert_template_arguments(conv, clang_decl->getTemplateArgs().asArray());
         for (auto && arg : args) {
             spec->add_arg(arg);
         }
     }
 
     // filling template record contents
-    fill_record_contents(ctx, spec, clang_decl);
+    fill_record_contents(conv, spec, clang_decl);
 
     return spec;
 }
 
 
-template_function * convert_template_function(conv_context & ctx,
+template_function * convert_template_function(converter_impl & conv,
                                               const ::clang::FunctionTemplateDecl * clang_decl) {
 
     auto clang_func_decl = clang_decl->getTemplatedDecl();
     auto clang_templ_pars = clang_decl->getTemplateParameters();
 
     // looking for existing CM declaration associated with clang template declaration
-    auto func = ctx.get_cm_entity_as<template_function>(clang_func_decl);
+    auto func = conv.get_decl_entity_as<template_function>(clang_func_decl);
     if (func != nullptr) {
         if (clang_decl->isThisDeclarationADefinition()) {
             // updating template parameters to match definition
-            update_template_params(ctx, func, clang_templ_pars);
+            update_template_params(conv, func, clang_templ_pars);
 
             // updating function parameters to match definition
-            update_function_params(ctx, func, clang_func_decl);
+            update_function_params(conv, func, clang_func_decl);
         }
 
         // TODO: check equality of function declarations
@@ -305,34 +305,34 @@ template_function * convert_template_function(conv_context & ctx,
         method_decl != nullptr && !method_decl->isStatic())
     {
         // context must be a record
-        auto rec = dynamic_cast<record*>(ctx.decl_ctx());
+        auto rec = dynamic_cast<record*>(conv.decl_ctx());
         assert(rec && "context must be a record for method declaration");
 
         func = rec->create_template_method(nm);
     } else {
-        func = ctx.decl_ctx()->create_template_function(nm);
+        func = conv.decl_ctx()->create_template_function(nm);
     }
 
     func->set_access_lev(get_clang_decl_acc_level(clang_func_decl));
 
     // adding entity before converting template parameters, return type and
     // function parameters
-    ctx.add_cm_entity(clang_func_decl, func);
+    conv.add_decl_entity(clang_func_decl, func);
 
     // setting current context to function
-    conv_context::decl_context_setter csetter{ctx, func, clang_func_decl};
+    converter_impl::decl_context_setter csetter{conv, func, clang_func_decl};
 
     // converting template parameters
-    convert_template_params(ctx, func, clang_templ_pars);
+    convert_template_params(conv, func, clang_templ_pars);
 
     // converting function return type and parameters
-    convert_function_ret_type_and_params(ctx, func, clang_func_decl);
+    convert_function_ret_type_and_params(conv, func, clang_func_decl);
 
     // converting template specializations only for canonical decl
     // (canonical decl is only one in all translation unit)
     if (clang_func_decl->isCanonicalDecl()) {
         for (auto && spec : clang_decl->specializations()) {
-            convert_template_function_inst(ctx, func, spec);
+            convert_template_function_inst(conv, func, spec);
         }
     }
 
@@ -341,27 +341,27 @@ template_function * convert_template_function(conv_context & ctx,
 
 
 template_function_instantiation *
-convert_template_function_inst(conv_context & ctx,
+convert_template_function_inst(converter_impl & conv,
                                cm::template_function * templ,
                                const ::clang::FunctionDecl * clang_func) {
     assert(clang_func->isTemplateInstantiation() && "function is not a template instantiation");
 
     // checking that there is no existing entity associated with template instantiation
-    auto func = ctx.get_cm_entity_as<template_function_instantiation>(clang_func);
+    auto func = conv.get_decl_entity_as<template_function_instantiation>(clang_func);
     assert(func == nullptr && "found existing associated template function instantiation entity");
 
     // converting template arguments
     auto clang_args = clang_func->getTemplateSpecializationArgs();
     assert(clang_args != nullptr && "no template arguments for function instantiation");
-    auto args = convert_template_arguments(ctx, clang_args->asArray());
+    auto args = convert_template_arguments(conv, clang_args->asArray());
 
     // creating new template function instantiation
     func = templ->create_instantiation(args);
 
     // converting function return type and parameters
-    convert_function_ret_type_and_params(ctx, func, clang_func);
+    convert_function_ret_type_and_params(conv, func, clang_func);
 
-    ctx.add_cm_entity(clang_func, func);
+    conv.add_decl_entity(clang_func, func);
 
     return func;
 }

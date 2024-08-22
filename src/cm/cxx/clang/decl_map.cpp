@@ -9,7 +9,7 @@
 
 #include "pch.hpp"
 
-#include "cm/cxx/clang/decl_map.hpp"
+#include "decl_map.hpp"
 
 
 namespace cm::cxx::clang {

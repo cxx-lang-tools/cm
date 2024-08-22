@@ -76,7 +76,7 @@ void ast_converter::convert() {
 
 bool ast_converter::TraverseNamespaceDecl(::clang::NamespaceDecl * clang_decl) {
     // getting namespace code model entity
-    auto ns = cm_conv_.get_cm_entity_as<namespace_>(clang_decl);
+    auto ns = cm_conv_.get_decl_entity_as<namespace_>(clang_decl);
     assert(ns && "can't find namespace code model entity");
 
     // creating namespace declaration
@@ -110,7 +110,7 @@ bool ast_converter::TraverseCXXRecordDecl(::clang::CXXRecordDecl * clang_decl) {
 
 bool ast_converter::TraverseClassTemplateDecl(::clang::ClassTemplateDecl * clang_decl) {
     // getting code model template record from code model converter
-    auto templ = cm_conv_.get_cm_entity_as<template_record>(clang_decl->getTemplatedDecl());
+    auto templ = cm_conv_.get_decl_entity_as<template_record>(clang_decl->getTemplatedDecl());
     assert(templ && "can't find code model record for clang declaration");
 
     // creating new template declaration
@@ -131,7 +131,7 @@ bool ast_converter::TraverseClassTemplateDecl(::clang::ClassTemplateDecl * clang
 
 
 bool ast_converter::TraverseTypedefDecl(::clang::TypedefDecl * clang_decl) {
-    auto td_type = cm_conv_.get_cm_entity_as<typedef_type>(clang_decl);
+    auto td_type = cm_conv_.get_decl_entity_as<typedef_type>(clang_decl);
     assert(td_type != nullptr && "can't find code model type for typedef declaration");
 
     auto td_decl = ctx_->create_decl<typedef_decl>();
@@ -158,7 +158,7 @@ bool ast_converter::TraverseFunctionTemplateDecl(::clang::FunctionTemplateDecl *
         ::clang::dyn_cast<::clang::FunctionDecl>(clang_decl->getTemplatedDecl());
 
     // getting code model entity for clang declaration
-    auto func = cm_conv_.get_cm_entity_as<template_function>(clang_func_decl);
+    auto func = cm_conv_.get_decl_entity_as<template_function>(clang_func_decl);
     assert(func && "can't find code model entity for method delcaration");
 
     // creating template declaration
@@ -193,7 +193,7 @@ bool ast_converter::TraverseClassTemplateSpecilizationDecl(
 
 bool ast_converter::TraverseFunctionDecl(::clang::FunctionDecl * clang_decl) {
     // getting code model entity for clang declaration
-    auto func = cm_conv_.get_cm_entity_as<function>(clang_decl);
+    auto func = cm_conv_.get_decl_entity_as<function>(clang_decl);
     assert(func && "can't find code model entity for method delcaration");
 
     // creating method declaration
@@ -222,7 +222,7 @@ bool ast_converter::TraverseCXXMethodDecl(::clang::CXXMethodDecl * clang_decl) {
 
     if (clang_decl->isStatic()) {
         // getting code model entity for clang declaration
-        auto m = cm_conv_.get_cm_entity_as<function>(clang_decl);
+        auto m = cm_conv_.get_decl_entity_as<function>(clang_decl);
         assert(m && "can't find code model entity for method delcaration");
 
         // creating static method declaration
@@ -235,7 +235,7 @@ bool ast_converter::TraverseCXXMethodDecl(::clang::CXXMethodDecl * clang_decl) {
         decl = std::move(mdecl);
     } else {
         // getting code model entity for clang declaration
-        auto m = cm_conv_.get_cm_entity_as<method>(clang_decl);
+        auto m = cm_conv_.get_decl_entity_as<method>(clang_decl);
         assert(m && "can't find code model entity for method delcaration");
 
         // creating method declaration
@@ -274,7 +274,7 @@ bool ast_converter::TraverseVarDecl(::clang::VarDecl * clang_var_decl) {
         return base_t::TraverseVarDecl(clang_var_decl);
     }
 
-    auto var = cm_conv_.get_cm_entity_as<variable>(clang_var_decl);
+    auto var = cm_conv_.get_decl_entity_as<variable>(clang_var_decl);
     assert(var && "can't find code model variable");
 
     // creating new variable declaration
@@ -295,7 +295,7 @@ bool ast_converter::TraverseVarDecl(::clang::VarDecl * clang_var_decl) {
 
 
 bool ast_converter::TraverseFieldDecl(::clang::FieldDecl * clang_field_decl) {
-    auto fld = cm_conv_.get_cm_entity_as<field>(clang_field_decl);
+    auto fld = cm_conv_.get_decl_entity_as<field>(clang_field_decl);
     assert(fld && "can't find code model field");
 
     // creating new variable declaration
@@ -339,7 +339,7 @@ ast_converter::convert_template_lists(const ::clang::DeclaratorDecl * clang_decl
     assert(num_lists > 0 && "declaration doses not have template parameters");
 
     // getting code model entity for clang declaration
-    auto ent = cm_conv_.get_cm_entity_as<context_entity>(clang_decl);
+    auto ent = cm_conv_.get_decl_entity_as<context_entity>(clang_decl);
     assert(ent != nullptr && "can't find code model entity for declaration");
 
     std::unique_ptr<template_decl> decl;
@@ -399,18 +399,18 @@ void ast_converter::convert_template_params(template_decl * decl,
 
         if (auto clang_type_par = ::clang::dyn_cast<::clang::TemplateTypeParmDecl>(clang_par)) {
             auto t_par = dynamic_cast<type_template_parameter*>(par);
-            //auto par = cm_conv_.get_cm_entity_as<type_template_parameter>(clang_par);
+            //auto par = cm_conv_.get_decl_entity_as<type_template_parameter>(clang_par);
             assert(t_par != nullptr && "template parameters inconsistency");
             par_decl = decl->add_type_param(t_par);
 
             // we have to manually add association between clang parameter declaration and
             // code model entity because this declaration not always processed by CM converter
-            if (!cm_conv_.get_cm_entity(clang_type_par)) {
-                cm_conv_.add_cm_entity(clang_type_par, t_par);
+            if (!cm_conv_.get_decl_entity(clang_type_par)) {
+                cm_conv_.add_decl_entity(clang_type_par, t_par);
             }
 
         } else if (auto val_par = ::clang::dyn_cast<::clang::NonTypeTemplateParmDecl>(clang_par)) {
-            //auto par = cm_conv_.get_cm_entity_as<value_template_parameter>(clang_par);
+            //auto par = cm_conv_.get_decl_entity_as<value_template_parameter>(clang_par);
             //assert(par != nullptr && "can't get code model entity for value template parameter");
 
             auto v_par = dynamic_cast<value_template_parameter*>(par);
@@ -457,7 +457,7 @@ void ast_converter::convert_template_params(template_decl * decl,
 std::unique_ptr<record_decl>
 ast_converter::convert_record_decl(ast_node * parent, ::clang::CXXRecordDecl * clang_decl) {
     // getting code model record from code model converter
-    auto cm_rec = cm_conv_.get_cm_entity_as<record>(clang_decl);
+    auto cm_rec = cm_conv_.get_decl_entity_as<record>(clang_decl);
     assert(cm_rec && "can't find code model record for clang declaration");
 
     // creating new record declaration
@@ -578,7 +578,7 @@ ast_converter::convert_scope_spec(ast_node * parent,
         assert(false && "don't know how to convert identitifers");
         return {};
     } else if (auto ns = nns->getAsNamespace()) {
-        auto cm_ns = cm_conv_.get_cm_entity_as<namespace_>(ns);
+        auto cm_ns = cm_conv_.get_decl_entity_as<namespace_>(ns);
         auto res = std::make_unique<namespace_scope_spec>(parent);
         res->set_entity(cm_ns);
         res->set_source_range(convert_source_range(nns_loc.getSourceRange()));
@@ -787,7 +787,7 @@ ast_converter::convert_type_scope(ast_node * parent, const ::clang::TypeLoc & lo
     // } else if (auto clang_td_type = ::clang::dyn_cast<::clang::TypedefType>(type)) {
     //     // typedef type must already exist in code model, getting it
     //     auto typedef_decl = clang_td_type->getDecl();
-    //     type = get_cm_entity_as<typedef_type>(typedef_decl);
+    //     type = get_decl_entity_as<typedef_type>(typedef_decl);
     //     assert(type && "typedef type must already exist in code model");
     // } else if (auto clang_tpar_type = ::clang::dyn_cast<::clang::TemplateTypeParmType>(type)) {
     //     type = convert_type_template_param_type(clang_tpar_type);
@@ -816,7 +816,7 @@ std::unique_ptr<scope_spec>
 ast_converter::convert_tag_scope_spec(ast_node * parent, const ::clang::TagTypeLoc & loc) {
     // getting code model entity associated with record declaration
     auto clang_decl = loc.getDecl();
-    auto rec = cm_conv_.get_cm_entity_as<named_record_type>(clang_decl);
+    auto rec = cm_conv_.get_decl_entity_as<named_record_type>(clang_decl);
     assert(rec != nullptr && "can't find entity for tag decl scope");
 
     // creating record scope specifier
@@ -836,7 +836,7 @@ ast_converter::convert_template_scope_spec(ast_node * parent,
 
     // getting code model entity associated with template specialization
     auto clang_decl = loc.getType()->getAsCXXRecordDecl();
-    auto ent = cm_conv_.get_cm_entity_as<context_entity>(clang_decl);
+    auto ent = cm_conv_.get_decl_entity_as<context_entity>(clang_decl);
     assert(ent != nullptr && "can't get entity for template record");
 
     // TODO: implement support of injected class records
@@ -999,7 +999,7 @@ ast_converter::convert_template_subst_type_spec(ast_node * parent,
                                                 const ::clang::TemplateSpecializationTypeLoc & loc) {
     // getting template substitution entity from code model
     auto clang_decl = loc.getType()->getAsCXXRecordDecl();
-    auto ent = cm_conv_.get_cm_entity_as<context_entity>(clang_decl);
+    auto ent = cm_conv_.get_decl_entity_as<context_entity>(clang_decl);
 
     if (auto inst = dynamic_cast<template_record_instantiation_type*>(ent)) {
         // template record instantiation
@@ -1044,7 +1044,7 @@ ast_converter::convert_record_type_spec(ast_node * parent, const ::clang::TagTyp
     assert(clang_rec_decl != nullptr && "unsupported tag type");
 
     if (loc.isDefinition()) {
-        auto rec = cm_conv_.get_cm_entity_as<record_type>(clang_rec_decl);
+        auto rec = cm_conv_.get_decl_entity_as<record_type>(clang_rec_decl);
         assert(rec && "can't find code model entity for record decl");
 
         auto spec = std::make_unique<record_decl_type_spec>(parent);
@@ -1055,7 +1055,7 @@ ast_converter::convert_record_type_spec(ast_node * parent, const ::clang::TagTyp
 
         return spec;
     } else {
-        auto rec = cm_conv_.get_cm_entity_as<named_record_type>(clang_rec_decl);
+        auto rec = cm_conv_.get_decl_entity_as<named_record_type>(clang_rec_decl);
         assert(rec && "can't find code model entity for record decl");
     
         auto spec = std::make_unique<record_type_spec>(parent);
@@ -1126,7 +1126,7 @@ std::unique_ptr<template_param_type_spec>
 ast_converter::convert_template_param(ast_node * parent,
                                       const ::clang::TemplateTypeParmTypeLoc & loc) {
     auto clang_decl = loc.getDecl();
-    auto par = cm_conv_.get_cm_entity_as<type_template_parameter>(clang_decl);
+    auto par = cm_conv_.get_decl_entity_as<type_template_parameter>(clang_decl);
     assert(par != nullptr && "can't find template parameter in code model");
     auto range = convert_source_range(loc.getBeginLoc(), clang_decl->getName().size());
 

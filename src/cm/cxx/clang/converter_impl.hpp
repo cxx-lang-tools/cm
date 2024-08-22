@@ -4,14 +4,23 @@
 // See accompanying file LICENSE for license information.
 //
 
-/// \file conv_context.hpp
-/// Contains definition of the conv_context class.
+/// \file converter_impl.hpp
+/// Contains definition of the converter_impl class.
 
 #pragma once
 
 #include "decl_map.hpp"
+#include "function_converter.hpp"
+#include "linkage_spec_converter.hpp"
+#include "namespace_converter.hpp"
+#include "record_converter.hpp"
+#include "template_function_converter.hpp"
+#include "template_record_converter.hpp"
+#include "template_record_partial_specialization_converter.hpp"
 #include "type_converter.hpp"
-#include "../../cm.hpp"
+#include "typedef_converter.hpp"
+#include "variable_converter.hpp"
+#include "cm/cm.hpp"
 #include <clang/AST/ASTContext.h>
 
 
@@ -20,19 +29,31 @@ namespace cm::cxx::clang {
 
 /// Context for converting clang AST to code model. Stores maps between AST and code
 /// model entities and current conveting state.
-class conv_context {
+class converter_impl {
+    using converters_tuple = std::tuple <
+        namespace_converter,
+        template_record_converter,
+        record_converter,
+        template_record_partial_specialization_converter,
+        typedef_converter,
+        function_converter,
+        variable_converter,
+        template_function_converter,
+        linkage_spec_converter
+    >;
+
 public:
     /// Helper class for settings current declaration contexts and restoring them
     /// at scope exit
     struct decl_context_setter {
     public:
         /// Constructs setter with invalid state
-        explicit decl_context_setter(conv_context & conv_ctx):
+        explicit decl_context_setter(converter_impl & conv_ctx):
             conv_ctx_{&conv_ctx}, old_ctx_{nullptr}, old_clang_ctx_{nullptr} {}
 
         /// Constructs setter. Sets new current context and clang declaration context
         /// and stores old contexts in this setter instance.
-        explicit decl_context_setter(conv_context & conv_ctx,
+        explicit decl_context_setter(converter_impl & conv_ctx,
                                      context * ctx,
                                      const ::clang::DeclContext * clang_ctx):
         conv_ctx_{&conv_ctx},
@@ -82,26 +103,30 @@ public:
         }
 
     private:
-        conv_context * conv_ctx_;                       ///< Pointer to converter context
+        converter_impl * conv_ctx_;                       ///< Pointer to converter context
         context * old_ctx_;                             ///< Previous context
         const ::clang::DeclContext * old_clang_ctx_;    ///< Previous clang context
     };
 
 
     /// Constructs converter context
-    explicit conv_context(code_model & mdl, const ::clang::ASTContext & clang_ctx):
+    explicit converter_impl(code_model & mdl, const ::clang::ASTContext & clang_ctx):
         mdl_{mdl}, clang_ctx_{clang_ctx}, types_{decls_, *this} {}
 
-    conv_context(const conv_context &) = delete;
-    conv_context(conv_context &&) = delete;
-    conv_context & operator=(const conv_context &) = delete;
-    conv_context & operator=(conv_context &&) = delete;
+    converter_impl(const converter_impl &) = delete;
+    converter_impl(converter_impl &&) = delete;
+    converter_impl & operator=(const converter_impl &) = delete;
+    converter_impl & operator=(converter_impl &&) = delete;
 
     /// Returns reference to code model
     code_model & mdl() const { return mdl_; }
 
     /// Returns reference to clang AST context
     const ::clang::ASTContext & clang_ctx() const { return clang_ctx_; }
+
+
+    ////////////////////////////////////////////////////////////
+    // Current conversion context
 
     /// Returns pointer to current declaration context in code model
     context * decl_ctx() const { return decl_ctx_; }
@@ -115,6 +140,10 @@ public:
     /// Sets pointer to current clang declaration context
     void set_clang_decl_ctx(const ::clang::DeclContext * c) { clang_decl_ctx_ = c; }
 
+
+    ////////////////////////////////////////////////////////////
+    // Declarations
+
     /// Returns reference to declarations map
     auto & decls() { return decls_; }
 
@@ -124,7 +153,7 @@ public:
     /// Finds code model entity associated with clang declaration.
     /// First gets canonical declaration of clang declaration.
     /// Returns nullptr if associated context_entity not found
-    context_entity * get_cm_entity(const ::clang::Decl * clang_decl) const {
+    context_entity * get_decl_entity(const ::clang::Decl * clang_decl) const {
         return decls_.get(clang_decl);
     }
 
@@ -132,14 +161,40 @@ public:
     /// specified type. Found context_entity must be convertible to specified type.
     /// Returns nullptr if context_entity is not found.
     template <typename Entity>
-    Entity * get_cm_entity_as(const ::clang::Decl * clang_decl) const {
+    Entity * get_decl_entity_as(const ::clang::Decl * clang_decl) const {
         return decls_.get_as<Entity>(clang_decl);
     }
 
     /// Adds code model context entity associated with clang declaration.
-    void add_cm_entity(const ::clang::Decl * clang_decl, context_entity * cm_ent) {
+    void add_decl_entity(const ::clang::Decl * clang_decl, context_entity * cm_ent) {
         decls_.add(clang_decl, cm_ent);
     }
+
+    /// Gets existing or creates new code model entity for clang declaration.
+    /// Created declaration is empty until convert function for clang declaration is called.
+    context_entity * decl_entity(const ::clang::Decl * decl);
+
+    /// Gets existing or creates new code model entity and casts it to specified type.
+    /// Existing entity must be convertable to specified type.
+    template <std::derived_from<context_entity> Entity>
+    Entity * decl_entity_as(const ::clang::Decl * decl) {
+        auto ent = decl_entity(decl);
+        assert(ent != nullptr && "decl_entity returned null");
+        auto casted_ent = dynamic_cast<Entity*>(ent);
+        assert(casted_ent != nullptr && "invalid entity type");
+        return casted_ent;
+    }
+
+    /// Gets existing or creates new code model context for parent declaration context
+    /// of specified clang declaration
+    context * parent_ctx(const ::clang::Decl * decl);
+
+    /// Converts declaration to code model entity
+    context_entity * convert_decl(const ::clang::Decl * decl);
+
+
+    ////////////////////////////////////////////////////////////
+    // Types
 
     /// Returns reference to type converter
     auto & types() { return types_; }
@@ -147,13 +202,26 @@ public:
     /// Returns const reference to type converter
     const auto & types() const { return types_; }
 
-public:
+private:
+    /// Creates code model entity for specified clang declaration
+    context_entity * create_decl_entity(const ::clang::Decl * decl);
+
+    /// Creates entity using converters tuple starting from specified index
+    template <size_t I>
+    context_entity * create_decl_entity_impl(const ::clang::Decl * decl);
+
+    /// Converts entity using converters tuple starting from specified index
+    template <size_t I>
+    context_entity * convert_decl_impl(const ::clang::Decl * decl);
+
+
     code_model & mdl_;                                      ///< Reference to code model
     const ::clang::ASTContext & clang_ctx_;                 ///< Reference to Clang AST context
     context * decl_ctx_ = nullptr;                          ///< Current code model context
     const ::clang::DeclContext * clang_decl_ctx_ = nullptr; ///< Current clang decl context
     decl_map decls_;                                        ///< Declarations map
     type_converter types_;                                  ///< Type converter
+    converters_tuple converters_;                           ///< Tuple of converters
 };
 
 

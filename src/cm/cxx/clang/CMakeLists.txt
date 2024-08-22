@@ -6,8 +6,10 @@ find_package(Clang REQUIRED CONFIG)
 add_library(cm-cxx-clang
             ast_converter.cpp
             cmclang.cpp
-            convert_decl.cpp
-            convert_decl.hpp
+            converter_impl.cpp
+            converter_impl.hpp
+            convert_function.cpp
+            convert_function.hpp
             convert_loc.cpp
             convert_loc.hpp
             convert_record.cpp
@@ -15,9 +17,27 @@ add_library(cm-cxx-clang
             convert_template.cpp
             convert_template.hpp
             decl_map.cpp
+            function_converter.cpp
+            function_converter.hpp
             import.hpp
+            linkage_spec_converter.cpp
+            linkage_spec_converter.hpp
+            namespace_converter.cpp
+            namespace_converter.hpp
             pch.hpp
+            record_converter.cpp
+            record_converter.hpp
+            template_function_converter.cpp
+            template_function_converter.hpp
+            template_record_converter.cpp
+            template_record_converter.hpp
+            template_record_partial_specialization_converter.cpp
+            template_record_partial_specialization_converter.hpp
+            typedef_converter.cpp
+            typedef_converter.hpp
             type_converter.cpp
+            variable_converter.cpp
+            variable_converter.hpp
             utils.cpp
             utils.hpp
            )

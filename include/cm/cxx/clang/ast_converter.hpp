@@ -9,11 +9,7 @@
 
 #pragma once
 
-#include "conv_context.hpp"
 #include "../../cm.hpp"
-#include "../../context_entity.hpp"
-#include "../../record_type.hpp"
-#include "../../template.hpp"
 #include <clang/AST/Decl.h>
 #include <clang/AST/DeclCXX.h>
 #include <clang/AST/DeclTemplate.h>
@@ -23,17 +19,18 @@
 
 namespace cm::cxx::clang {
 
+class converter_impl;
+
 
 /// clang AST to code model converter
 class ast_converter {
 public:
     /// Constructs AST converter with specified reference to global code model
     /// and clang AST context
-    ast_converter(code_model & mdl, const ::clang::ASTContext & ctx):
-        ctx_{mdl, ctx} {}
+    ast_converter(code_model & mdl, const ::clang::ASTContext & ctx);
 
     /// Default destructor
-    ~ast_converter() = default;
+    ~ast_converter();
 
     /// Deleted copy constructor
     ast_converter(const ast_converter &) = delete;
@@ -105,25 +102,31 @@ public:
     /// Finds code model entity associated with clang declaration.
     /// First gets canonical declaration of clang declaration.
     /// Returns nullptr if associated context_entity not found
-    context_entity * get_cm_entity(const ::clang::Decl * clang_decl);
+    context_entity * get_decl_entity(const ::clang::Decl * clang_decl);
 
     /// Finds code model enitty associated with clang declaration and converts it to
     /// specified type. Found context_entity must be convertible to specified type.
     /// Returns nullptr if context_entity is not found.
     template <typename Entity>
-    Entity * get_cm_entity_as(const ::clang::Decl * clang_decl) {
-        return ctx_.get_cm_entity_as<Entity>(clang_decl);
+    Entity * get_decl_entity_as(const ::clang::Decl * clang_decl) {
+        auto ent = get_decl_entity(clang_decl);
+        if (!ent) {
+            return nullptr;
+        }
+
+        auto casted_ent = dynamic_cast<Entity*>(ent);
+        assert(casted_ent && "existing context entity type mismatch");
+        return casted_ent;
     }
 
     /// Adds code model context_entity associated with clang declaration.
-    void add_cm_entity(const ::clang::Decl * clang_decl, context_entity * cm_ent);
+    void add_decl_entity(const ::clang::Decl * clang_decl, context_entity * cm_ent);
 
 private:
     /// Converts source location
     source_location convert_loc(const ::clang::SourceLocation & loc) const;
 
-    /// Converting context
-    conv_context ctx_;
+    std::unique_ptr<converter_impl> impl_;
 };
 
 
