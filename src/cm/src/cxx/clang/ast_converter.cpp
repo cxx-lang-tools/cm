@@ -423,13 +423,6 @@ void ast_converter::convert_template_params(template_decl * decl,
         } else if (auto tpar = ::clang::dyn_cast<::clang::TemplateTemplateParmDecl>(clang_par)) {
             // TODO: implement template template parameters
             assert(false && "NYI");
-        
-        // C++20 support in latest clang
-        // } else if (auto clang_obj_par = ::clang::dyn_cast<::clang::TemplateParamObjectDecl>(par)) {
-        //     // TODO: check if we need something special for template object parameters other
-        //     // than name and type
-        //     auto par_type = convert_type(clang_val_par->getType());
-        //     rec->add_value_template_param(par_name, par_type.type());
 
         } else {
             assert(false && "Unknown template parameter type");
@@ -715,99 +708,6 @@ ast_converter::convert_type_scope(ast_node * parent, const ::clang::TypeLoc & lo
         return {};
     }
 
-    // // converting clang type to code model type
-    // auto type = cm_conv_.convert_type(loc.getType());
-
-
-
-    // if (auto td_type = type->cast<typedef_type>()) {
-    //     // creating typedef scope specifier
-    //     auto spec = std::make_unique<typedef_scope_spec>(parent);
-    //     spec->set_entity(td_type);
-
-    //     // // converting parent scope
-    //     // auto td_loc = loc.castAs<::clang::TypedefTypeLoc>();
-
-    //     // td_loc.
-    //     return spec;
-
-    // } else if (auto rec_type = type->cast<named_record_type>()) {
-    //     std::cout << "LOC KIND FOR RECORD: " << loc.getTypeLocClass() << std::endl;
-    //     auto rec_loc = loc.castAs<::clang::RecordTypeLoc>();
-    //     assert(!rec_loc.isNull() && "invalid type location for record");
-
-    //     auto scope = std::make_unique<record_scope_spec>(parent);
-    //     scope->set_entity(rec_type);
-    //     scope->set_name(rec_type->name(),
-    //                     convert_source_range(rec_loc.getNameLoc(), rec_type->name().size()));
-
-    //     return scope;
-
-    //     // auto qual_loc = rec_loc.findExplicitQualifierLoc();
-    //     // if (qual_loc) {
-    //     //     std::cout << "HAS QUAL" << std::endl;
-    //     // } else {
-    //     //     std::cout << "DOES NOT HAVE QUAL" << std::endl;
-    //     // }
-
-    //     // auto next_loc = rec_loc.getNextTypeLoc();
-    //     // if (next_loc) {
-    //     //     std::cout << "HAS NEXT" << std::endl;
-    //     // } else {
-    //     //     std::cout << "DOES NOT HAVE NEXT" << std::endl;
-    //     // }
-    // } else if (auto rec_type = type->cast<template_record_substitution>()) {
-    // } else if (auto t_type = type->cast<template_record_type>()) {
-    //     // TODO: add parent qualifier 
-    //     auto res = std::make_unique<template_record_scope_spec>(parent);
-    //     res->set_entity(t_type);
-    //     return res;
-    // } else if (auto dep_type = type->cast<template_record_dependent_instantiation_type>()) {
-    // } else {
-    //     assert(false && "don't know how to convert type scope qualifier");
-    //     return {};
-    // }
-
-    // if (auto clang_bt_type = ::clang::dyn_cast<::clang::BuiltinType>(type)) {
-    //     type = convert_builtin_type(clang_bt_type);
-    // } else if (auto clang_ptr_type = ::clang::dyn_cast<::clang::PointerType>(type)) {
-    //     type = convert_pointer_type(clang_ptr_type);
-    // } else if (auto clang_ref_type = ::clang::dyn_cast<::clang::LValueReferenceType>(type)) {
-    //     type = convert_lvalue_reference_type(clang_ref_type);
-    // } else if (auto clang_ref_type = ::clang::dyn_cast<::clang::RValueReferenceType>(type)) {
-    //     type = convert_rvalue_reference_type(clang_ref_type);
-    // } else if (auto clang_func_type = ::clang::dyn_cast<::clang::FunctionType>(type)) {
-    //     type = convert_function_type(clang_func_type);
-    // } else if (auto clang_rec_type = ::clang::dyn_cast<::clang::RecordType>(type)) {
-    //     type = convert_record_type(clang_rec_type);
-    // } else if (auto clang_arr_type = ::clang::dyn_cast<::clang::ConstantArrayType>(type)) {
-    //     type = convert_array_type(clang_arr_type);
-    // } else if (auto clang_elab_type = ::clang::dyn_cast<::clang::ElaboratedType>(type)) {
-    //     type = convert_type(clang_elab_type->getNamedType()).type();
-    // } else if (auto clang_td_type = ::clang::dyn_cast<::clang::TypedefType>(type)) {
-    //     // typedef type must already exist in code model, getting it
-    //     auto typedef_decl = clang_td_type->getDecl();
-    //     type = get_decl_entity_as<typedef_type>(typedef_decl);
-    //     assert(type && "typedef type must already exist in code model");
-    // } else if (auto clang_tpar_type = ::clang::dyn_cast<::clang::TemplateTypeParmType>(type)) {
-    //     type = convert_type_template_param_type(clang_tpar_type);
-    // } else if (auto clang_templ_spec = ::clang::dyn_cast<::clang::TemplateSpecializationType>(type)) {
-    //     type = convert_template_spec_type(clang_templ_spec);
-    // } else if (auto clang_subst_tpar = ::clang::dyn_cast<::clang::SubstTemplateTypeParmType>(type)) {
-    //     // TODO: do we need store this info in code model?
-    //     type = convert_type(clang_subst_tpar->getReplacementType()).type();
-    // } else if (auto dep_type = ::clang::dyn_cast<::clang::DependentNameType>(type)) {
-    //     type = convert_dependent_type(dep_type);
-    // } else if (auto dt_type = ::clang::dyn_cast<::clang::DecltypeType>(type)) {
-    //     type = convert_decltype_type(dt_type);
-    // } else {
-    //     std::cerr << "DON'T NOT KNOW HOW TO CONVERT TYPE:\n";
-    //     clang_type->dump();
-    //     // TODO: diagnostics
-    //     assert(false && "Don't not know how to convert type");
-    // }
-
-
     return {};
 }
 
@@ -891,9 +791,7 @@ ast_converter::convert_builtin_type_spec(ast_node * parent, const ::clang::Built
     auto clang_bt_type = ::clang::dyn_cast<::clang::BuiltinType>(loc.getTypePtr());
     assert(clang_bt_type && "invalid clang type for builtin type loc");
 
-    auto cm_type = cm_conv_.convert_builtin_type(clang_bt_type);
-    auto cm_bt_type = dynamic_cast<builtin_type*>(cm_type);
-    assert(cm_bt_type && "invalid builtin cm type");
+    auto cm_bt_type = cm_conv_.get_type_as<builtin_type>(clang_bt_type);
     auto res = std::make_unique<builtin_type_spec>(parent);
     res->set_entity(cm_bt_type);
     res->set_source_range(convert_source_range(loc.getSourceRange()));
@@ -906,7 +804,7 @@ ast_converter::convert_pointer_type_spec(ast_node * parent, const ::clang::Point
     auto clang_type = ::clang::dyn_cast<::clang::PointerType>(loc.getTypePtr());
     assert(clang_type && "invalid clang type for pointer type loc");
 
-    auto type = cm_conv_.convert_pointer_type(clang_type);
+    auto type = cm_conv_.get_type_as<pointer_type>(clang_type);
     auto res = std::make_unique<pointer_type_spec>(parent);
     res->set_entity(type);
     res->set_source_range(convert_source_range(loc.getSourceRange()));
@@ -922,7 +820,7 @@ ast_converter::convert_lvalue_reference_type_spec(ast_node * parent,
     auto clang_type = ::clang::dyn_cast<::clang::LValueReferenceType>(loc.getTypePtr());
     assert(clang_type && "invalid clang type for reference type loc");
 
-    auto type = cm_conv_.convert_lvalue_reference_type(clang_type);
+    auto type = cm_conv_.get_type_as<lvalue_reference_type>(clang_type);
     auto res = std::make_unique<lvalue_reference_type_spec>(parent);
     res->set_entity(type);
     res->set_source_range(convert_source_range(loc.getSourceRange()));
@@ -938,7 +836,7 @@ ast_converter::convert_rvalue_reference_type_spec(ast_node * parent,
     auto clang_type = ::clang::dyn_cast<::clang::RValueReferenceType>(loc.getTypePtr());
     assert(clang_type && "invalid clang type for reference type loc");
 
-    auto type = cm_conv_.convert_rvalue_reference_type(clang_type);
+    auto type = cm_conv_.get_type_as<rvalue_reference_type>(clang_type);
     auto res = std::make_unique<rvalue_reference_type_spec>(parent);
     res->set_entity(type);
     res->set_source_range(convert_source_range(loc.getSourceRange()));
@@ -964,7 +862,7 @@ ast_converter::convert_function_type_spec(ast_node * parent, const ::clang::Func
     assert(clang_type && "invalid clang type for function type loc");
 
     // creating function type specifier
-    auto type = cm_conv_.convert_function_type(clang_type);
+    auto type = cm_conv_.get_type_as<function_type>(clang_type);
     auto type_spec = std::make_unique<function_type_spec>(parent, type);
     type_spec->set_source_range(convert_source_range(loc.getSourceRange()));
 
@@ -974,7 +872,7 @@ ast_converter::convert_function_type_spec(ast_node * parent, const ::clang::Func
     // converting parameters
     for (auto & clang_par : loc.getParams()) {
         // creating new parameter
-        auto par_type = cm_conv_.convert_type(clang_par->getType());
+        auto par_type = cm_conv_.get_type(clang_par->getType());
         auto par_spec = std::make_unique<function_type_spec_parameter>(type_spec.get());
         par_spec->set_entity(par_type.type());
 

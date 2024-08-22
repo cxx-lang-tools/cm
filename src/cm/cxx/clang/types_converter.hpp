@@ -5,7 +5,7 @@
 //
 
 /// \file type_converter.hpp
-/// Contains declaration of the type_converter class.
+/// Contains declaration of the types_converter class.
 
 #pragma once
 
@@ -20,11 +20,11 @@ namespace cm::cxx::clang {
 class converter_impl;
 
 
-/// Clang type converter. Maps clang types to code model types.
-class type_converter {
+/// Clang types converter. Maps clang types to code model types.
+class types_converter {
 public:
     /// Constructs type converter
-    explicit type_converter(decl_map & decls, converter_impl & conv):
+    explicit types_converter(decl_map & decls, converter_impl & conv):
         decls_{decls}, conv_{conv} {}
 
     /// Gets existing or creates new code model type for clang builtin type.
@@ -70,6 +70,30 @@ public:
 
     /// Gets existing or creates new code model qual type for clang qual type.
     qual_type type(const ::clang::QualType & clang_type);
+
+    /// Gets existing code model type for clang type. Type must exist in code model.
+    type_t * get_type(const ::clang::Type * clang_type) const;
+
+    /// Gets existing code model type for clang type. Type must exist in code model.
+    qual_type get_type(const ::clang::QualType & clang_type) const;
+
+    /// Gets existing code model type for clang type and converts it to specified type.
+    /// Type must exist in code model and be convertible to specified type.
+    template <std::derived_from<type_t> Type>
+    Type * get_type_as(const ::clang::Type * clang_type) const {
+        auto type = dynamic_cast<Type*>(get_type(clang_type));
+        assert(type && "code model type can't be converted to specified type");
+        return type;
+    }
+
+    /// Gets existing code model type for clang type and converts it to specified type.
+    /// Type must exist in code model and be convertible to specified type.
+    template <std::derived_from<type_t> Type>
+    qual_type_t<Type> get_type_as(const ::clang::QualType & clang_type) const {
+        auto type = get_type(clang_type).cast<Type>();
+        assert(!type.is_null() && "code model type can't be converted to specified type");
+        return type;
+    }
 
 
 private:

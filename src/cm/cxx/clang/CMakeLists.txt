@@ -35,7 +35,8 @@ add_library(cm-cxx-clang
             template_record_partial_specialization_converter.hpp
             typedef_converter.cpp
             typedef_converter.hpp
-            type_converter.cpp
+            types_converter.cpp
+            types_converter.hpp
             variable_converter.cpp
             variable_converter.hpp
             utils.cpp

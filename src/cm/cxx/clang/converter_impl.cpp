@@ -16,6 +16,25 @@
 namespace cm::cxx::clang {
 
 
+ void converter_impl::convert() {
+    auto tu_decl = clang_ctx().getTranslationUnitDecl();
+
+    // adding association with entire code model for translation unit decl
+    add_decl_entity(tu_decl, &mdl());
+
+    // setting translation unit as current decl context
+    converter_impl::decl_context_setter csetter{*this, &mdl(), tu_decl};
+
+    CM_CLANG_LOG_DECL("converting translation unit", tu_decl);
+
+    // traversing over all top level declarations in translation unit
+    for (auto && decl : tu_decl->decls()) {
+        CM_CLANG_LOG_DECL("converting top level declaration", decl);
+        convert_decl(decl);
+    }
+ }
+
+
 context_entity * converter_impl::decl_entity(const ::clang::Decl * decl) {
     // looking for existing entity assoicated with clang declaration
     if (auto ent = decls_.get(decl)) {

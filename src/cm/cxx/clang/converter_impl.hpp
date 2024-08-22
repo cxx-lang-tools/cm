@@ -17,7 +17,7 @@
 #include "template_function_converter.hpp"
 #include "template_record_converter.hpp"
 #include "template_record_partial_specialization_converter.hpp"
-#include "type_converter.hpp"
+#include "types_converter.hpp"
 #include "typedef_converter.hpp"
 #include "variable_converter.hpp"
 #include "cm/cm.hpp"
@@ -124,6 +124,9 @@ public:
     /// Returns reference to clang AST context
     const ::clang::ASTContext & clang_ctx() const { return clang_ctx_; }
 
+    /// Converts entire clang translation unit into code model
+    void convert();
+
 
     ////////////////////////////////////////////////////////////
     // Current conversion context
@@ -220,7 +223,8 @@ private:
     context * decl_ctx_ = nullptr;                          ///< Current code model context
     const ::clang::DeclContext * clang_decl_ctx_ = nullptr; ///< Current clang decl context
     decl_map decls_;                                        ///< Declarations map
-    type_converter types_;                                  ///< Type converter
+    // std::map<const ::clang::Type *, type_t *> types_;       ///< Types map
+    types_converter types_;                                 ///< Type converter
     converters_tuple converters_;                           ///< Tuple of converters
 };
 

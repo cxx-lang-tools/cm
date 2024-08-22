@@ -48,56 +48,34 @@ public:
     //////////////////////////////////////////////////////////////////////
     // Types conversion
 
-    /// Converts clang qual type to code model type. Creates composite types if needed.
-    qual_type convert_type(const ::clang::QualType & clang_type);
+    /// Gets existing code model type for clang type. Type must exist in code model.
+    type_t * get_type(const ::clang::Type * clang_type) const;
 
-    /// Converts bultin clang type to code model type.
-    type_t * convert_builtin_type(const ::clang::BuiltinType * clang_bt_type);
+    /// Gets existing code model type for clang type. Type must exist in code model.
+    qual_type get_type(const ::clang::QualType & clang_type) const;
 
-    /// Converts pointer clang type to code model type.
-    pointer_type * convert_pointer_type(const ::clang::PointerType * clang_ptr_type);
+    /// Gets existing code model type for clang type and converts it to specified type.
+    /// Type must exist in code model and be convertible to specified type.
+    template <std::derived_from<type_t> Type>
+    Type * get_type_as(const ::clang::Type * clang_type) const {
+        auto type = dynamic_cast<Type*>(get_type(clang_type));
+        assert(type && "code model type can't be converted to specified type");
+        return type;
+    }
 
-    /// Converts lvalue reference clang type to code model type.
-    lvalue_reference_type *
-    convert_lvalue_reference_type(const ::clang::LValueReferenceType * clang_ref_type);
-
-    /// Converts rvalue reference clang type to code model type.
-    rvalue_reference_type *
-    convert_rvalue_reference_type(const ::clang::RValueReferenceType * clang_ref_type);
-
-    /// Converts array clang type to code model type.
-    array_type * convert_array_type(const ::clang::ConstantArrayType * clang_arr_type);
-
-    /// Converts type template parameter type to code model type
-    type_template_parameter *
-    convert_type_template_param_type(const ::clang::TemplateTypeParmType * clang_tpar_type);
-
-    /// Converts template specialization type to code model type
-    type_t *
-    convert_template_spec_type(const ::clang::TemplateSpecializationType * clang_templ_spec);
-
-    /// Converts clang function type to code model type. Creates new composite types if needed.
-    function_type * convert_function_type(const ::clang::FunctionType * clang_func_type);
-
-    /// Converts clang record type to code model type. Creates new empty record if needed.
-    record_type * convert_record_type(const ::clang::RecordType * clang_rec_type);
-
-    /// Converts dependent type
-    dependent_type * convert_dependent_type(const ::clang::DependentNameType * clang_type);
-
-    /// Converts decltype type
-    decltype_type * convert_decltype_type(const ::clang::DecltypeType * clang_type);
+    /// Gets existing code model type for clang type and converts it to specified type.
+    /// Type must exist in code model and be convertible to specified type.
+    template <std::derived_from<type_t> Type>
+    qual_type_t<Type> get_type_as(const ::clang::QualType & clang_type) const {
+        auto type = get_type(clang_type).cast<Type>();
+        assert(!type.is_null() && "code model type can't be converted to specified type");
+        return type;
+    }
 
 
     //////////////////////////////////////////////////////////////////////
     // Declarations
 
-    /// Converts declaration
-    void convert_decl(const ::clang::Decl * clang_decl);
-
-
-    //////////////////////////////////////////////////////////////////////
-    // Entities
 
     /// Finds code model entity associated with clang declaration.
     /// First gets canonical declaration of clang declaration.

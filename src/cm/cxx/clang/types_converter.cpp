@@ -4,12 +4,12 @@
 // See accompanying file LICENSE for license information.
 //
 
-/// \file convert_type.cpp
+/// \file types_converter.cpp
 /// Contains implementations of functions for converting clang types to code model types.
 
 #include "pch.hpp"
 
-#include "type_converter.hpp"
+#include "types_converter.hpp"
 #include "convert_record.hpp"
 #include "convert_template.hpp"
 #include "log.hpp"
@@ -21,7 +21,7 @@
 namespace cm::cxx::clang {
 
 
-type_t * type_converter::builtin(const ::clang::BuiltinType * clang_bt_type) {
+type_t * types_converter::builtin(const ::clang::BuiltinType * clang_bt_type) {
     switch (clang_bt_type->getKind()) {
     case ::clang::BuiltinType::Void:
         return conv_.mdl().bt_void();
@@ -320,27 +320,27 @@ type_t * type_converter::builtin(const ::clang::BuiltinType * clang_bt_type) {
 }
 
 
-pointer_type * type_converter::pointer(const ::clang::PointerType * clang_ptr_type) {
+pointer_type * types_converter::pointer(const ::clang::PointerType * clang_ptr_type) {
     auto pointee_type = type(clang_ptr_type->getPointeeType());
     return conv_.mdl().get_or_create_ptr_type(pointee_type);
 }
 
 
 lvalue_reference_type *
-type_converter::lvalue_reference(const ::clang::LValueReferenceType * clang_ref_type) {
+types_converter::lvalue_reference(const ::clang::LValueReferenceType * clang_ref_type) {
     auto base_type = type(clang_ref_type->getPointeeType());
     return conv_.mdl().get_or_create_lvalue_ref_type(base_type);
 }
 
 
 rvalue_reference_type *
-type_converter::rvalue_reference(const ::clang::RValueReferenceType * clang_ref_type) {
+types_converter::rvalue_reference(const ::clang::RValueReferenceType * clang_ref_type) {
     auto base_type = type(clang_ref_type->getPointeeType());
     return conv_.mdl().get_or_create_rvalue_ref_type(base_type);
 }
 
 
-array_type * type_converter::array(const ::clang::ConstantArrayType * clang_arr_type) {
+array_type * types_converter::array(const ::clang::ConstantArrayType * clang_arr_type) {
     auto elt_type = type(clang_arr_type->getElementType());
     return conv_.mdl().get_or_create_arr_type(elt_type.type(),
                                              clang_arr_type->getSize().getLimitedValue());
@@ -348,7 +348,7 @@ array_type * type_converter::array(const ::clang::ConstantArrayType * clang_arr_
 
 
 type_template_parameter *
-type_converter::template_parameter(const ::clang::TemplateTypeParmType * type) {
+types_converter::template_parameter(const ::clang::TemplateTypeParmType * type) {
 
     templated_entity * templ = nullptr;
 
@@ -403,7 +403,7 @@ type_converter::template_parameter(const ::clang::TemplateTypeParmType * type) {
 }
 
 
-type_t * type_converter::template_spec(const ::clang::TemplateSpecializationType * type) {
+type_t * types_converter::template_spec(const ::clang::TemplateSpecializationType * type) {
 
     if (type->isTypeAlias()) {
         assert(false && "type aliases are not implemented yet");
@@ -455,7 +455,7 @@ type_t * type_converter::template_spec(const ::clang::TemplateSpecializationType
 }
 
 
-function_type * type_converter::function(const ::clang::FunctionType * clang_func_type) {
+function_type * types_converter::function(const ::clang::FunctionType * clang_func_type) {
 
     assert(clang_func_type && "clang function type should not be null here");
 
@@ -487,27 +487,27 @@ function_type * type_converter::function(const ::clang::FunctionType * clang_fun
 }
 
 
-record_type * type_converter::record(const ::clang::RecordType * clang_rec_type) {
+record_type * types_converter::record(const ::clang::RecordType * clang_rec_type) {
     return conv_.decl_entity_as<record_type>(clang_rec_type->getDecl());
 }
 
 
-dependent_type * type_converter::dependent(const ::clang::DependentNameType * clang_type) {
+dependent_type * types_converter::dependent(const ::clang::DependentNameType * clang_type) {
     return conv_.decl_ctx()->create_entity<dependent_type>();
 }
 
 
-decltype_type * type_converter::decltype_(const ::clang::DecltypeType * clang_type) {
+decltype_type * types_converter::decltype_(const ::clang::DecltypeType * clang_type) {
     return conv_.decl_ctx()->create_entity<decltype_type>();
 }
 
 
-typedef_type * type_converter::typedef_(const ::clang::TypedefType * clang_type) {
+typedef_type * types_converter::typedef_(const ::clang::TypedefType * clang_type) {
     return conv_.decl_entity_as<typedef_type>(clang_type->getDecl());
 }
 
 
-qual_type type_converter::type(const ::clang::Type * clang_tp) {
+qual_type types_converter::type(const ::clang::Type * clang_tp) {
 
     // special case for paren type
     if (auto p_type = ::clang::dyn_cast<::clang::ParenType>(clang_tp)) {
@@ -532,7 +532,7 @@ qual_type type_converter::type(const ::clang::Type * clang_tp) {
 
 
 /// Gets existing or creates new code model qual type for clang qual type.
-qual_type type_converter::type(const ::clang::QualType & clang_type) {
+qual_type types_converter::type(const ::clang::QualType & clang_type) {
     // converting base type
     auto type = this->type(clang_type.getTypePtr());
 
@@ -550,7 +550,47 @@ qual_type type_converter::type(const ::clang::QualType & clang_type) {
 }
 
 
-type_t * type_converter::create(const ::clang::Type * type) {
+type_t * types_converter::get_type(const ::clang::Type * clang_type) const {
+    assert(::clang::dyn_cast<::clang::ParenType>(clang_type) == nullptr &&
+           "clang ParenType is not allowed here");
+    // // special case for paren type
+    // if (auto p_type = ::clang::dyn_cast<::clang::ParenType>(clang_type)) {
+    //     // ignoring parens in code model for now
+    //     return this->get_type(p_type->getInnerType());
+    // }
+
+    // searching for existing code model type associated with clang type
+    if (auto it = types_.find(clang_type); it != types_.end()) {
+        assert(it->second != nullptr && "null code model type assoicated with clang type");
+        return it->second;
+    }
+
+    assert(false && "can't find existing code model type for clang type");
+    return nullptr;
+}
+
+
+qual_type types_converter::get_type(const ::clang::QualType & clang_type) const {
+    // getting code model type for base type
+    auto type = this->get_type(clang_type.getTypePtr());
+
+    // adding cv-qualifiers
+
+    qual_type qtype{type};
+
+    if (clang_type.isLocalConstQualified()) {
+        qtype.set_const(true);
+    }
+
+    if (clang_type.isLocalVolatileQualified()) {
+        qtype.set_volatile(true);
+    }
+
+    return qtype;
+}
+
+
+type_t * types_converter::create(const ::clang::Type * type) {
     if (auto clang_bt_type = ::clang::dyn_cast<::clang::BuiltinType>(type)) {
         return builtin(clang_bt_type);
     } else if (auto clang_ptr_type = ::clang::dyn_cast<::clang::PointerType>(type)) {
