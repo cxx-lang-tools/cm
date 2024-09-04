@@ -20,14 +20,14 @@ void convert_function_ret_type_and_params(converter_impl & conv,
                                           function * func,
                                           const ::clang::FunctionDecl * clang_func) {
     // converting function return type
-    func->set_ret_type(conv.types().type(clang_func->getReturnType()));
+    func->set_ret_type(conv.type(clang_func->getReturnType()));
 
     // converting function parameters
     for (auto && par : clang_func->parameters()) {
         if (!par->getName().empty()) {
-            func->add_param(par->getNameAsString(), conv.types().type(par->getType()));
+            func->add_param(par->getNameAsString(), conv.type(par->getType()));
         } else {
-            func->add_param(conv.types().type(par->getType()));
+            func->add_param(conv.type(par->getType()));
         }
     }
 }

@@ -17,7 +17,6 @@
 #include "template_function_converter.hpp"
 #include "template_record_converter.hpp"
 #include "template_record_partial_specialization_converter.hpp"
-#include "types_converter.hpp"
 #include "typedef_converter.hpp"
 #include "variable_converter.hpp"
 #include "cm/cm.hpp"
@@ -26,11 +25,13 @@
 
 namespace cm::cxx::clang {
 
+class types_converter;
+
 
 /// Context for converting clang AST to code model. Stores maps between AST and code
 /// model entities and current conveting state.
 class converter_impl {
-    using converters_tuple = std::tuple <
+    using decl_converters = std::tuple <
         namespace_converter,
         template_record_converter,
         record_converter,
@@ -109,9 +110,11 @@ public:
     };
 
 
-    /// Constructs converter context
-    explicit converter_impl(code_model & mdl, const ::clang::ASTContext & clang_ctx):
-        mdl_{mdl}, clang_ctx_{clang_ctx}, types_{decls_, *this} {}
+    /// Constructs converter
+    explicit converter_impl(code_model & mdl, const ::clang::ASTContext & clang_ctx);
+
+    /// Destroys converter
+    ~converter_impl();
 
     converter_impl(const converter_impl &) = delete;
     converter_impl(converter_impl &&) = delete;
@@ -193,17 +196,59 @@ public:
     context * parent_ctx(const ::clang::Decl * decl);
 
     /// Converts declaration to code model entity
-    context_entity * convert_decl(const ::clang::Decl * decl);
+    void convert_decl(const ::clang::Decl * decl);
 
 
     ////////////////////////////////////////////////////////////
     // Types
 
-    /// Returns reference to type converter
-    auto & types() { return types_; }
+    /// Gets existing or creates new code model type for clang type.
+    type_t * type(const ::clang::Type * clang_type);
 
-    /// Returns const reference to type converter
-    const auto & types() const { return types_; }
+    /// Gets existing or creates new code model qual type for clang qual type.
+    qual_type type(const ::clang::QualType & clang_type);
+
+    /// Gets existing or creates new code model type for clang type and converts it
+    /// to specified type. Type must be convertible to specified type.
+    template <std::derived_from<type_t> Type>
+    Type * type_as(const ::clang::Type * clang_type) {
+        auto t = dynamic_cast<Type*>(type(clang_type));
+        assert(t && "code model type can't be converted to specified type");
+        return t;
+    }
+
+    /// Gets existing or creates new code model type for clang type and converts it
+    /// to specified type. Type must be convertible to specified type.
+    template <std::derived_from<type_t> Type>
+    qual_type_t<Type> type_as(const ::clang::QualType & clang_type) {
+        auto t = type(clang_type).cast<Type>();
+        assert(!t.is_null() && "code model type can't be converted to specified type");
+        return t;
+    }
+
+    /// Gets existing code model type for clang type. Type must exist in code model.
+    type_t * get_type(const ::clang::Type * clang_type) const;
+
+    /// Gets existing code model type for clang type. Type must exist in code model.
+    qual_type get_type(const ::clang::QualType & clang_type) const;
+
+    /// Gets existing code model type for clang type and converts it to specified type.
+    /// Type must exist in code model and be convertible to specified type.
+    template <std::derived_from<type_t> Type>
+    Type * get_type_as(const ::clang::Type * clang_type) const {
+        auto type = dynamic_cast<Type*>(get_type(clang_type));
+        assert(type && "code model type can't be converted to specified type");
+        return type;
+    }
+
+    /// Gets existing code model type for clang type and converts it to specified type.
+    /// Type must exist in code model and be convertible to specified type.
+    template <std::derived_from<type_t> Type>
+    qual_type_t<Type> get_type_as(const ::clang::QualType & clang_type) const {
+        auto type = get_type(clang_type).cast<Type>();
+        assert(!type.is_null() && "code model type can't be converted to specified type");
+        return type;
+    }
 
 private:
     /// Creates code model entity for specified clang declaration
@@ -215,7 +260,24 @@ private:
 
     /// Converts entity using converters tuple starting from specified index
     template <size_t I>
-    context_entity * convert_decl_impl(const ::clang::Decl * decl);
+    void convert_decl_impl(const ::clang::Decl * decl);
+
+
+    /// Gets existing or creates new code model type for clang template specialization type
+    type_t * get_template_spec_type(const ::clang::TemplateSpecializationType * clang_templ_spec);
+
+    /// Gets existing or creates new code model type for clang dependent type
+    dependent_type * get_dependent_type(const ::clang::DependentNameType * clang_type);
+
+    /// Gets existing or creates new code model type for clang decltype type
+    decltype_type * get_decltype_type(const ::clang::DecltypeType * clang_type);
+
+    /// Creates code model type for clang type
+    type_t * create_type(const ::clang::Type * clang_type);
+
+    /// Returns clang declaration corresponding to clang type. Returns nullptr if type
+    /// does not have declaration.
+    static const ::clang::TypeDecl * get_type_decl(const ::clang::Type * type);
 
 
     code_model & mdl_;                                      ///< Reference to code model
@@ -223,9 +285,9 @@ private:
     context * decl_ctx_ = nullptr;                          ///< Current code model context
     const ::clang::DeclContext * clang_decl_ctx_ = nullptr; ///< Current clang decl context
     decl_map decls_;                                        ///< Declarations map
-    // std::map<const ::clang::Type *, type_t *> types_;       ///< Types map
-    types_converter types_;                                 ///< Type converter
-    converters_tuple converters_;                           ///< Tuple of converters
+    std::map<const ::clang::Type *, type_t *> types_;       ///< Types map
+    decl_converters decl_convs_;                            ///< Tuple of decl converters
+    std::unique_ptr<types_converter> types_conv_;           ///< Types converter
 };
 
 

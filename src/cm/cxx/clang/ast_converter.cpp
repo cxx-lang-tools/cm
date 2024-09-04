@@ -50,12 +50,12 @@ void ast_converter::convert() {
 
 
 type_t * ast_converter::get_type(const ::clang::Type * clang_type) const {
-    return impl_->types().get_type(clang_type);
+    return impl_->get_type(clang_type);
 }
 
 
 qual_type ast_converter::get_type(const ::clang::QualType & clang_type) const {
-    return impl_->types().get_type(clang_type);
+    return impl_->get_type(clang_type);
 }
 
 

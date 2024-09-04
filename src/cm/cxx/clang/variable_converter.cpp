@@ -23,7 +23,7 @@ variable * variable_converter::create_entity(converter_impl & conv, const clang_
 
     // converting variable type
     // TODO: should we move type conversion to convert_decl?
-    auto var_type = conv.types().type(decl->getType());
+    auto var_type = conv.type(decl->getType());
 
     // creating new variable
     return parent->create_var(decl->getNameAsString(), var_type);

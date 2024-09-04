@@ -36,7 +36,7 @@ typedef_type * typedef_converter::convert_decl(converter_impl & conv,
 
     // getting or creating entity for base type
     auto clang_base_type = decl->getUnderlyingType();
-    auto base_type = conv.types().type(clang_base_type);
+    auto base_type = conv.type(clang_base_type);
     td->set_base(base_type);
 
     // converting location and access level

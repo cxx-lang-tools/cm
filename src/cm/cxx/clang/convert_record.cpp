@@ -94,7 +94,7 @@ static field * convert_field(converter_impl & conv,
     }
 
     // converting variable type
-    auto var_type = conv.types().type(clang_field_decl->getType());
+    auto var_type = conv.type(clang_field_decl->getType());
 
     // creating new variable
     auto nm = clang_field_decl->getNameAsString();
@@ -122,8 +122,8 @@ void fill_record_contents(converter_impl & conv,
     if (auto clang_cxx_record_decl = ::clang::dyn_cast<::clang::CXXRecordDecl>(clang_record_decl)) {
         for (auto && base : clang_cxx_record_decl->bases()) {
             auto clang_base_type = base.getType().getTypePtr();
-            auto base_type = conv.types().type(clang_base_type);
-            rec->add_base(base_type.type());
+            auto base_type = conv.type(clang_base_type);
+            rec->add_base(base_type);
         }
     }
 

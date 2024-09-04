@@ -4,7 +4,10 @@ find_package(Clang REQUIRED CONFIG)
 
 # C++ Code model builder from clang AST
 add_library(cm-cxx-clang
+            array_type_converter.hpp
             ast_converter.cpp
+            builtin_type_converter.cpp
+            builtin_type_converter.hpp
             cmclang.cpp
             converter_impl.cpp
             converter_impl.hpp
@@ -19,23 +22,30 @@ add_library(cm-cxx-clang
             decl_map.cpp
             function_converter.cpp
             function_converter.hpp
+            function_type_converter.cpp
+            function_type_converter.hpp
             import.hpp
             linkage_spec_converter.cpp
             linkage_spec_converter.hpp
+            lvalue_reference_type_converter.hpp
             namespace_converter.cpp
             namespace_converter.hpp
             pch.hpp
+            pointer_type_converter.hpp
             record_converter.cpp
             record_converter.hpp
+            rvalue_reference_type_converter.hpp
             template_function_converter.cpp
             template_function_converter.hpp
             template_record_converter.cpp
             template_record_converter.hpp
             template_record_partial_specialization_converter.cpp
             template_record_partial_specialization_converter.hpp
+            type_converter.hpp
+            type_template_parameter_converter.cpp
+            type_template_parameter_converter.hpp
             typedef_converter.cpp
             typedef_converter.hpp
-            types_converter.cpp
             types_converter.hpp
             variable_converter.cpp
             variable_converter.hpp

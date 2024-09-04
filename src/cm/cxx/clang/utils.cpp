@@ -44,4 +44,11 @@ std::string clang_decl_desc(const ::clang::Decl * decl) {
 }
 
 
+std::string clang_type_desc(const ::clang::Type * type) {
+    std::ostringstream str;
+    str << type->getTypeClassName() << " [" << type << ']';
+    return str.str();
+}
+
+
 }

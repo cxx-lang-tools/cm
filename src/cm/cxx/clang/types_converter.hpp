@@ -1,111 +1,86 @@
 // Copyright (c) 2024, Alexandr Esilevich
-//
+// 
 // Distributed under the BSD 2-Clause License.
 // See accompanying file LICENSE for license information.
 //
 
-/// \file type_converter.hpp
-/// Contains declaration of the types_converter class.
+/// \file types_converter.hpp
+/// Contains definition of the types_converter class.
 
 #pragma once
 
-#include "decl_map.hpp"
-#include "cm/cm.hpp"
-#include <clang/AST/TypeLoc.h>
+#include "array_type_converter.hpp"
+#include "builtin_type_converter.hpp"
+#include "converter_impl.hpp"
+#include "elaborated_type_converter.hpp"
+#include "function_type_converter.hpp"
+#include "log.hpp"
+#include "lvalue_reference_type_converter.hpp"
+#include "rvalue_reference_type_converter.hpp"
+#include "pointer_type_converter.hpp"
+#include "type_converter.hpp"
+#include "type_template_parameter_converter.hpp"
+#include <tuple>
 
 
 namespace cm::cxx::clang {
 
-
 class converter_impl;
 
 
-/// Clang types converter. Maps clang types to code model types.
+/// Types converter. Converts clang types to code model types using list of converters
+/// for individual types.
 class types_converter {
+    /// Tuple of type converters
+    using type_converters = std::tuple <
+        builtin_type_converter,
+        pointer_type_converter,
+        lvalue_reference_type_converter,
+        rvalue_reference_type_converter,
+        function_type_converter,
+        array_type_converter,
+        elaborated_type_converter,
+        type_template_parameter_converter
+    >;
 public:
-    /// Constructs type converter
-    explicit types_converter(decl_map & decls, converter_impl & conv):
-        decls_{decls}, conv_{conv} {}
+    /// Constructs types converter
+    explicit types_converter(converter_impl & conv):
+        conv_{conv} {}
 
-    /// Gets existing or creates new code model type for clang builtin type.
-    /// NOTE: return type is not always code model builting type in case of objc types.
-    type_t * builtin(const ::clang::BuiltinType * clang_bt_type);
-
-    /// Gets existing or creates new code model type for clang pointer type
-    pointer_type * pointer(const ::clang::PointerType * clang_ptr_type);
-
-    /// Gets existing or creates new code model type for clang lvalue reference type.
-    lvalue_reference_type * lvalue_reference(const ::clang::LValueReferenceType * clang_ref_type);
-
-    /// Gets existing or creates new code model type for clang rvalue reference type.
-    rvalue_reference_type * rvalue_reference(const ::clang::RValueReferenceType * clang_ref_type);
-
-    /// Gets existing or creates new code model type for clang array type
-    array_type * array(const ::clang::ConstantArrayType * clang_arr_type);
-
-    /// Gets existing or creates new code model type for clang template parameter type
-    type_template_parameter *
-    template_parameter(const ::clang::TemplateTypeParmType * clang_tpar_type);
-
-    /// Gets existing or creates new code model type for clang template specialization type
-    type_t * template_spec(const ::clang::TemplateSpecializationType * clang_templ_spec);
-
-    /// Gets existing or creates new code model type for clang function type
-    function_type * function( const ::clang::FunctionType * clang_func_type);
-
-    /// Gets existing or creates new code model type for clang record type
-    record_type * record(const ::clang::RecordType * clang_rec_type);
-
-    /// Gets existing or creates new code model type for clang dependent type
-    dependent_type * dependent(const ::clang::DependentNameType * clang_type);
-
-    /// Gets existing or creates new code model type for clang decltype type
-    decltype_type * decltype_(const ::clang::DecltypeType * clang_type);
-
-    /// Gets existing or creates new code model type for clang typedef type
-    typedef_type * typedef_(const ::clang::TypedefType * clang_type);
-
-    /// Gets existing or creates new code model type for clang type.
-    qual_type type(const ::clang::Type * clang_type);
-
-    /// Gets existing or creates new code model qual type for clang qual type.
-    qual_type type(const ::clang::QualType & clang_type);
-
-    /// Gets existing code model type for clang type. Type must exist in code model.
-    type_t * get_type(const ::clang::Type * clang_type) const;
-
-    /// Gets existing code model type for clang type. Type must exist in code model.
-    qual_type get_type(const ::clang::QualType & clang_type) const;
-
-    /// Gets existing code model type for clang type and converts it to specified type.
-    /// Type must exist in code model and be convertible to specified type.
-    template <std::derived_from<type_t> Type>
-    Type * get_type_as(const ::clang::Type * clang_type) const {
-        auto type = dynamic_cast<Type*>(get_type(clang_type));
-        assert(type && "code model type can't be converted to specified type");
-        return type;
+    /// Gets existing or creates new code model type for clang type using type converters
+    type_t * type(const ::clang::Type * type) {
+        return type_impl<0>(type);
     }
-
-    /// Gets existing code model type for clang type and converts it to specified type.
-    /// Type must exist in code model and be convertible to specified type.
-    template <std::derived_from<type_t> Type>
-    qual_type_t<Type> get_type_as(const ::clang::QualType & clang_type) const {
-        auto type = get_type(clang_type).cast<Type>();
-        assert(!type.is_null() && "code model type can't be converted to specified type");
-        return type;
-    }
-
 
 private:
-    /// Creates code model type for clang type
-    type_t * create(const ::clang::Type * clang_type);
+    /// Gets existing or creates new code model type for clang type using type converters
+    /// starting from index I
+    template <size_t I>
+    type_t * type_impl(const ::clang::Type * type) {
+        if constexpr (I == std::tuple_size_v<type_converters>) {
+            // matching converter not found
+            CM_CLANG_LOG_SCAT_TYPE_ERROR(decl, "unknown clang type", type, conv_.clang_ctx());
+            // TODO: assert(false) after converters for all types are implemented
+            // assert(false && "unknown clang type");
+            return nullptr;
+        } else {
+            // trying current converter
+            using converter_t = std::tuple_element_t<I, type_converters>;
+            if (auto conv_type = ::clang::dyn_cast<typename converter_t::clang_type_t>(type)) {
+                auto & conv = std::get<I>(convs_);
+                if (conv.match(conv_type)) {
+                    return conv.type(conv_, conv_type);
+                }
+            }
+
+            // trying next converters
+            return type_impl<I + 1>(type);
+        }
+    }
 
 
-    decl_map & decls_;          ///< Declarations map
-    converter_impl & conv_;     ///< Reference to converter
-
-    /// Map from clang types for code model types
-    std::map<const ::clang::Type *, type_t *> types_;
+    converter_impl & conv_;             ///< Reference to converter instance
+    type_converters convs_;             ///< Tuple of type converters
 };
 
 

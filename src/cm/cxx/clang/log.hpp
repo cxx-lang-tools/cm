@@ -42,3 +42,7 @@
 #define CM_CLANG_LOG_SCAT_DECL_ERROR(scat, msg, decl) \
     CM_CLANG_LOG_SCAT_ERROR(scat) << msg << ": " << clang_decl_desc(decl); \
     CM_CLANG_LOG_SCAT_TRACE(scat) << "\n" << dump_decl_to_string(decl)
+
+#define CM_CLANG_LOG_SCAT_TYPE_ERROR(scat, msg, decl, clang_ctx) \
+    CM_CLANG_LOG_SCAT_ERROR(scat) << msg << ": " << clang_type_desc(decl); \
+    CM_CLANG_LOG_SCAT_TRACE(scat) << "\n" << dump_type_to_string(decl, clang_ctx)
