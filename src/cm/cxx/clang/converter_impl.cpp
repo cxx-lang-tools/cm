@@ -100,11 +100,7 @@ type_t * converter_impl::type(const ::clang::Type * clang_type) {
 
     // trying types converter
     auto tp = types_conv_->type(clang_type);
-
-    // creating new type
-    if (!tp) {
-        tp = create_type(clang_type);
-    }
+    assert(tp && "invalid type returned by types converter");
 
     // adding created type to map of types
     types_.emplace(clang_type, tp);
@@ -225,7 +221,7 @@ template <size_t I>
 void converter_impl::convert_decl_impl(const ::clang::Decl * decl) {
     if constexpr (I == std::tuple_size_v<decl_converters>) {
         // matching converter not found
-        CM_CLANG_LOG_SCAT_DECL_ERROR(decl, "unknown clang declaration", decl);
+        // CM_CLANG_LOG_SCAT_DECL_ERROR(decl, "unknown clang declaration", decl);
         // TODO: consider enabling assertion after all declaration converters implemented 
         //assert(false && "unknown clang declaration");
     } else {
@@ -240,87 +236,6 @@ void converter_impl::convert_decl_impl(const ::clang::Decl * decl) {
 
         // trying next converters
         convert_decl_impl<I + 1>(decl);
-    }
-}
-
-
-type_t * converter_impl::get_template_spec_type(const ::clang::TemplateSpecializationType * type) {
-
-    if (type->isTypeAlias()) {
-        assert(false && "type aliases are not implemented yet");
-        return nullptr;
-    } else {
-        // getting record declaration for template specialization or template declaration
-        auto rec_decl = type->getAsCXXRecordDecl();
-        if (rec_decl) {
-            if (auto templ_decl = rec_decl->getDescribedClassTemplate()) {
-                // template instantiation is just a template declaration being processed now
-                auto rec = decls_.get_as<template_record>(rec_decl);
-                return rec->this_type();
-            } else {
-                // std::cout << "TEMPLATE SPECIALIZATION TYPE: " << rec_decl << std::endl;
-                // rec_decl->dump();
-
-                // looking for existing CM entity associated with specialization record decl
-                auto rec = decls_.get_as<template_record_instantiation_type>(rec_decl);
-                assert(rec != nullptr &&
-                       "no CM record associated with template specialization type");
-                return rec;
-            }
-        } else {
-            // template specialization without record declaration must be a dependent type
-            assert(type->isDependentType() && "required dependent type here");
-
-            // getting template declaration
-            auto templ_decl = type->getTemplateName().getAsTemplateDecl();
-            assert(templ_decl && "template delcaration is null for dependent template name");
-            auto templ_rec_decl = templ_decl->getTemplatedDecl();
-            assert(templ_rec_decl && "record delcaration is null for dependent template name");
-
-            // getting code model template associated with template declaration
-            auto templ = decls_.get_as<template_record>(templ_rec_decl);
-            assert(templ != nullptr && "can't find CM template for tempalte decl");
-
-            // converting template arguments
-            auto args = convert_template_arguments(*this, type->template_arguments());
-
-            // looking for existing instantiation
-            if (auto inst = templ->find_dependent_instantiation(args)) {
-                return inst;
-            }
-
-            // creating template dependent instantiation
-            return templ->create_dependent_instantiation(args);
-        }
-    }
-}
-
-
-dependent_type * converter_impl::get_dependent_type(const ::clang::DependentNameType * clang_type) {
-    return decl_ctx()->create_entity<dependent_type>();
-}
-
-
-decltype_type * converter_impl::get_decltype_type(const ::clang::DecltypeType * clang_type) {
-    return decl_ctx()->create_entity<decltype_type>();
-}
-
-
-type_t * converter_impl::create_type(const ::clang::Type * type) {
-    if (auto tspec = ::clang::dyn_cast<::clang::TemplateSpecializationType>(type)) {
-        return get_template_spec_type(tspec);
-    } else if (auto subst_tpar = ::clang::dyn_cast<::clang::SubstTemplateTypeParmType>(type)) {
-        // TODO: do we need store this info in code model?
-        return this->type(subst_tpar->getReplacementType()).type();
-    } else if (auto dep_type = ::clang::dyn_cast<::clang::DependentNameType>(type)) {
-        return get_dependent_type(dep_type);
-    } else if (auto dt_type = ::clang::dyn_cast<::clang::DecltypeType>(type)) {
-        return get_decltype_type(dt_type);
-    } else {
-        CM_CLANG_LOG_ERROR << "don't know how to create code model type for clang type:\n"
-                           << dump_type_to_string(type, clang_ctx());
-        assert(false && "Don't not know how to convert type");
-        return {};
     }
 }
 

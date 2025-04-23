@@ -20,6 +20,10 @@ add_library(cm-cxx-clang
             convert_template.cpp
             convert_template.hpp
             decl_map.cpp
+            decltype_type_converter.cpp
+            decltype_type_converter.hpp
+            dependent_type_converter.cpp
+            dependent_type_converter.hpp
             function_converter.cpp
             function_converter.hpp
             function_type_converter.cpp
@@ -41,6 +45,8 @@ add_library(cm-cxx-clang
             template_record_converter.hpp
             template_record_partial_specialization_converter.cpp
             template_record_partial_specialization_converter.hpp
+            template_specialization_type_converter.cpp
+            template_specialization_type_converter.hpp
             type_converter.hpp
             type_template_parameter_converter.cpp
             type_template_parameter_converter.hpp

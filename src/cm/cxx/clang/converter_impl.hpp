@@ -262,19 +262,6 @@ private:
     template <size_t I>
     void convert_decl_impl(const ::clang::Decl * decl);
 
-
-    /// Gets existing or creates new code model type for clang template specialization type
-    type_t * get_template_spec_type(const ::clang::TemplateSpecializationType * clang_templ_spec);
-
-    /// Gets existing or creates new code model type for clang dependent type
-    dependent_type * get_dependent_type(const ::clang::DependentNameType * clang_type);
-
-    /// Gets existing or creates new code model type for clang decltype type
-    decltype_type * get_decltype_type(const ::clang::DecltypeType * clang_type);
-
-    /// Creates code model type for clang type
-    type_t * create_type(const ::clang::Type * clang_type);
-
     /// Returns clang declaration corresponding to clang type. Returns nullptr if type
     /// does not have declaration.
     static const ::clang::TypeDecl * get_type_decl(const ::clang::Type * type);

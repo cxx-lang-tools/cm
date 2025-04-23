@@ -12,12 +12,16 @@
 #include "array_type_converter.hpp"
 #include "builtin_type_converter.hpp"
 #include "converter_impl.hpp"
+#include "decltype_type_converter.hpp"
+#include "dependent_type_converter.hpp"
 #include "elaborated_type_converter.hpp"
 #include "function_type_converter.hpp"
 #include "log.hpp"
 #include "lvalue_reference_type_converter.hpp"
 #include "rvalue_reference_type_converter.hpp"
 #include "pointer_type_converter.hpp"
+#include "subst_template_type_param_type_converter.hpp"
+#include "template_specialization_type_converter.hpp"
 #include "type_converter.hpp"
 #include "type_template_parameter_converter.hpp"
 #include <tuple>
@@ -40,7 +44,11 @@ class types_converter {
         function_type_converter,
         array_type_converter,
         elaborated_type_converter,
-        type_template_parameter_converter
+        type_template_parameter_converter,
+        template_specialization_type_converter,
+        subst_template_type_param_type_converter,
+        dependent_type_converter,
+        decltype_type_converter
     >;
 public:
     /// Constructs types converter
@@ -61,7 +69,7 @@ private:
             // matching converter not found
             CM_CLANG_LOG_SCAT_TYPE_ERROR(decl, "unknown clang type", type, conv_.clang_ctx());
             // TODO: assert(false) after converters for all types are implemented
-            // assert(false && "unknown clang type");
+            assert(false && "unknown clang type");
             return nullptr;
         } else {
             // trying current converter
