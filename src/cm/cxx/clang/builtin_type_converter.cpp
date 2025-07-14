@@ -184,10 +184,6 @@ type_t * builtin_type_converter::type(converter_impl & conv, const clang_type_t 
         // TODO: add support of objective-c
         return conv.mdl().bt_int();
 
-    case ::clang::BuiltinType::OMPArraySection:
-        // TODO: add support of openmp
-        return conv.mdl().bt_int();
-
     case ::clang::BuiltinType::SveInt8:
         return conv.mdl().bt_arm_sve_int8x1();
     case ::clang::BuiltinType::SveInt8x2:
