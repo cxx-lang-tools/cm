@@ -31,6 +31,15 @@ endif()
 
 find_package(Boost 1.64 REQUIRED COMPONENTS ${boost_libraries})
 
+set(CM_BOOST_HEADERS_LIBRARIES)
+
+if(TARGET Boost::headers)
+    list(APPEND CM_BOOST_HEADERS_LIBRARIES Boost::headers)
+endif()
+
+if(TARGET Boost::boost)
+    list(APPEND CM_BOOST_HEADERS_LIBRARIES Boost::boost)
+endif()
 
 set(CM_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include")
 

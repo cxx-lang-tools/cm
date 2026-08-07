@@ -74,6 +74,8 @@ add_subdirectory(test)
 
 if("${CM_ENABLE_TOOLS}")
     add_executable(cm-cxx-clang-dump cmclangdump.cpp)
-    target_link_libraries(cm-cxx-clang-dump PUBLIC cm-cxx-clang Boost::program_options)
+    target_link_libraries(cm-cxx-clang-dump PUBLIC cm-cxx-clang
+                          Boost::program_options
+                          ${CM_BOOST_HEADERS_LIBRARIES})
     target_precompile_headers(cm-cxx-clang-dump PRIVATE pch.hpp)
 endif()

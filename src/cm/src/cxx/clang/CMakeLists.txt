@@ -23,6 +23,9 @@ add_subdirectory(test)
 
 if("${CM_ENABLE_TOOLS}")
     add_executable(cm-src-cxx-clang-print cmsrcclangprint.cpp)
-    target_link_libraries(cm-src-cxx-clang-print PRIVATE cm-src-cxx-clang Boost::program_options)
+    target_link_libraries(cm-src-cxx-clang-print PRIVATE
+                          cm-src-cxx-clang
+                          Boost::program_options
+                          ${CM_BOOST_HEADERS_LIBRARIES})
     target_precompile_headers(cm-src-cxx-clang-print PRIVATE pch.hpp)
 endif()
