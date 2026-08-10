@@ -16,7 +16,6 @@ add_executable(cm-test
 target_precompile_headers(cm-test PRIVATE pch.hpp)
 target_link_libraries(cm-test PRIVATE
                       cm
-                      Boost::unit_test_framework
                       ${CM_BOOST_HEADERS_LIBRARIES})
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")

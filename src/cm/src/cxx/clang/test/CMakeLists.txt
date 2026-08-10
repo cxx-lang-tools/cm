@@ -9,7 +9,6 @@ add_executable(cm-src-cxx-clang-test
 
 target_link_libraries(cm-src-cxx-clang-test PRIVATE
                       cm-src-cxx-clang
-                      Boost::unit_test_framework
                       ${CM_BOOST_HEADERS_LIBRARIES})
 
 if("${CMAKE_SYSTEM_NAME}" STREQUAL "Linux")
