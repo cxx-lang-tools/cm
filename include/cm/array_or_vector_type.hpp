@@ -12,6 +12,7 @@
 #include "type.hpp"
 #include "qual_type.hpp"
 #include <cassert>
+#include <cstdint>
 
 
 namespace cm {
