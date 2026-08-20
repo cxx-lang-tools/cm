@@ -15,6 +15,9 @@ target_include_directories(cm-src-cxx-clang PRIVATE ${LLVM_INCLUDE_DIRS} ${CLANG
 set(clang_libraries
     libclang
     clangAST
+    clangBasic
+    clangLex
+    LLVMSupport
    )
 
 target_link_libraries(cm-src-cxx-clang PRIVATE ${clang_libraries})
