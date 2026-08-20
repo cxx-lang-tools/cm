@@ -14,6 +14,7 @@
 #include "convert_loc.hpp"
 #include "convert_record.hpp"
 #include "convert_template.hpp"
+#include "template_record_specialization_converter.hpp"
 
 
 namespace cm::cxx::clang {
@@ -62,7 +63,7 @@ template_record * template_record_converter::convert_decl(converter_impl & conv,
     // (canonical decl is only one in all translation unit)
     if (decl->isCanonicalDecl()) {
         for (auto && spec : decl->specializations()) {
-            convert_template_class_spec(conv, rec, spec);
+            template_record_specialization_converter::convert_decl(conv, spec);
         }
     }
 

@@ -23,11 +23,10 @@ template_record_partial_specialization_converter::create_entity(
         converter_impl & conv,
         const clang_decl_t * decl) {
 
-    // getting code model entity for tempalte record
+    // getting existing or creating new code model entity for tempalte record
     auto templ_decl = decl->getSpecializedTemplate();
     assert(templ_decl && "can't get clang template decl for specialization");
-    auto templ = conv.get_decl_entity_as<template_record>(templ_decl);
-    assert(templ && "can't find template record for partial template specialization");
+    auto templ = conv.decl_entity_as<template_record>(templ_decl);
 
     return templ->create_partial_specialization();
 }

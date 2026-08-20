@@ -25,16 +25,6 @@ template_argument_desc_vector
 convert_template_arguments(converter_impl & conv,
                            const ::clang::ArrayRef<::clang::TemplateArgument> & args);
 
-/// Converts class template declaration
-template_record * convert_template_class(converter_impl & conv,
-                                         const ::clang::ClassTemplateDecl * clang_templ_decl);
-
-/// Converts class template specialization declaration to code model record
-record *
-convert_template_class_spec(converter_impl & conv,
-                            cm::template_record * templ,
-                            const ::clang::ClassTemplateSpecializationDecl * clang_spec_decl);
-
 /// Converts class template partial specialization
 template_record_partial_specialization * convert_template_partial_specialization(
         converter_impl & conv,

@@ -18,8 +18,8 @@ namespace cm::cxx::clang {
 
 
 bool record_converter::match(const clang_decl_t * decl) {
-    // skipping template record partial specializations
-    if (::clang::dyn_cast<::clang::ClassTemplatePartialSpecializationDecl>(decl)) {
+    // skipping template record specializations, instantiations and partial specializations
+    if (::clang::dyn_cast<::clang::ClassTemplateSpecializationDecl>(decl)) {
         return false;
     }
 

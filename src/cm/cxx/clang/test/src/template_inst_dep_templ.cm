@@ -1,0 +1,12 @@
+template func foo<type T>(x: T) -> void;
+
+template struct str<type T> {
+    injected struct str;
+};
+
+template_instantiation struct str<int> {
+    method ~str() -> void;
+};
+
+template_instantiation func foo<str<int>>(x: str<int>) -> void;
+func bar() -> void;

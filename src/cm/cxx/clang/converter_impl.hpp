@@ -17,6 +17,7 @@
 #include "template_function_converter.hpp"
 #include "template_record_converter.hpp"
 #include "template_record_partial_specialization_converter.hpp"
+#include "template_record_specialization_converter.hpp"
 #include "typedef_converter.hpp"
 #include "variable_converter.hpp"
 #include "cm/cm.hpp"
@@ -34,6 +35,7 @@ class converter_impl {
     using decl_converters = std::tuple <
         namespace_converter,
         template_record_converter,
+        template_record_specialization_converter,
         record_converter,
         template_record_partial_specialization_converter,
         typedef_converter,
