@@ -179,8 +179,8 @@ bool ast_converter::TraverseFunctionTemplateDecl(::clang::FunctionTemplateDecl *
 }
 
 
-bool ast_converter::TraverseClassTemplateSpecilizationDecl(
-        ::clang::ClassTemplatePartialSpecializationDecl * decl) {
+bool ast_converter::TraverseClassTemplateSpecializationDecl(
+        ::clang::ClassTemplateSpecializationDecl * decl) {
 
     // skipping implicit instantiations
     if (decl->isImplicit()) {

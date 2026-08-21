@@ -125,7 +125,7 @@ private:
 
     /// Traverses class template specialization
     bool
-    TraverseClassTemplateSpecilizationDecl(::clang::ClassTemplatePartialSpecializationDecl * decl);
+    TraverseClassTemplateSpecializationDecl(::clang::ClassTemplateSpecializationDecl * decl);
 
     /// Traverses function declaration
     bool TraverseFunctionDecl(::clang::FunctionDecl * clang_decl);
